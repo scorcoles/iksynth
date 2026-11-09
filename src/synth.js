@@ -7,7 +7,7 @@
 //   voces (hasta 12 a la vez; cada una, un oscilador, «unison» si se le dan varias voces,
 //   con su envolvente de volumen y su filtro de paso bajo con su propia envolvente)
 //     → LFO (uno de tres efectos, según a qué se aplique: el filtro, el tono o el volumen)
-//     → chorus → delay → reverb → volumen general
+//     → drive (distorsión) → chorus → delay → reverb → volumen general
 //     → [aquí escuchan los analizadores: lo que se dibuja]
 //     → silencio (el botón del altavoz) → limitador → foco de la ventana → altavoces
 //
@@ -31,6 +31,7 @@ export const DEFAULTS = {
   lfoTarget: 'filter',
   lfoRate: 0.4,
   lfoDepth: 0.2,
+  drive: 0,
   chorus: 0.2,
   delay: 0.18,
   delayTime: 0.3,
@@ -55,6 +56,7 @@ export const PRESETS = {
     attack: 0.005, decay: 0.25, sustain: 0.5, release: 0.2,
     cutoff: 220, resonance: 6, envAmount: 3.5, envDecay: 0.18,
     lfoTarget: 'filter', lfoDepth: 0,
+    drive: 0.2,
     chorus: 0, delay: 0, reverb: 0.08, size: 1.5, volume: -8,
   },
   pluck: {
@@ -69,6 +71,7 @@ export const PRESETS = {
     attack: 0.02, decay: 0.2, sustain: 0.8, release: 0.3,
     cutoff: 2200, resonance: 4, envAmount: 1.5, envDecay: 0.3,
     lfoTarget: 'pitch', lfoRate: 5.5, lfoDepth: 0.25,
+    drive: 0.3,
     chorus: 0.1, delay: 0.3, delayTime: 0.25, feedback: 0.3, reverb: 0.25, size: 2.5,
   },
   drone: {
@@ -99,6 +102,7 @@ export const JITTER = {
   envDecay: { mul: 0.9 },
   lfoRate: { mul: 1 },
   lfoDepth: { add: 0.2 },
+  drive: { add: 0.15 },
   chorus: { add: 0.2 },
   delay: { add: 0.15 },
   delayTime: { mul: 0.7 },
@@ -114,7 +118,7 @@ const GROUPS = {
   amp: ['attack', 'decay', 'sustain', 'release'],
   filter: ['cutoff', 'resonance', 'envAmount', 'envDecay'],
   lfo: ['lfoTarget', 'lfoRate', 'lfoDepth'],
-  fx: ['chorus', 'delay', 'delayTime', 'feedback'],
+  fx: ['drive', 'chorus', 'delay', 'delayTime', 'feedback'],
   reverb: ['reverb', 'size'],
   out: ['volume'],
 };
@@ -135,6 +139,11 @@ export function createSynth() {
   const autoFilter = new Tone.AutoFilter({ frequency: 1, depth: 0, octaves: 3, wet: 0 }).start();
   const tremolo = new Tone.Tremolo({ frequency: 1, depth: 0, wet: 0 }).start();
 
+  // La distorsión: una curva que satura la onda (con sobremuestreo, para que los agudos
+  // no suenen a cristales rotos) y, detrás, un poco menos de volumen cuanto más satura, para
+  // que subirla no sea solo subir el volumen.
+  const drive = new Tone.Distortion({ distortion: 0, oversample: '4x', wet: 0 });
+  const driveTrim = new Tone.Gain(1);
   const chorus = new Tone.Chorus({ frequency: 1.5, delayTime: 3.5, depth: 0.6, spread: 180, wet: 0 }).start();
   const delay = new Tone.FeedbackDelay({ delayTime: 0.3, feedback: 0.35, wet: 0 });
   const reverb = new Tone.Reverb({ decay: 3, preDelay: 0.02, wet: 0 });
@@ -143,7 +152,7 @@ export function createSynth() {
   const limiter = new Tone.Limiter(-1);
   const focus = new Tone.Gain(1);
 
-  voices.chain(vibrato, autoFilter, tremolo, chorus, delay, reverb, volume, mute, limiter, focus, Tone.getDestination());
+  voices.chain(vibrato, autoFilter, tremolo, drive, driveTrim, chorus, delay, reverb, volume, mute, limiter, focus, Tone.getDestination());
 
   // Lo que se dibuja: el espectro (en decibelios, de 0 a la mitad de la frecuencia de
   // muestreo) y la onda tal cual.
@@ -202,6 +211,10 @@ export function createSynth() {
       set(tremolo, target === 'amp', depth);
     },
     fx() {
+      // Sin drive, la distorsión no está (sin mezcla); con él, del todo.
+      drive.distortion = params.drive;
+      drive.wet.value = params.drive > 0 ? 1 : 0;
+      driveTrim.gain.rampTo(Tone.dbToGain(-params.drive * 9), 0.05);
       chorus.wet.value = params.chorus;
       delay.wet.value = params.delay;
       delay.delayTime.rampTo(params.delayTime, 0.08);

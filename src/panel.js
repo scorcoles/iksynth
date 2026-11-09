@@ -52,6 +52,7 @@ const SECTIONS = [
   {
     title: 'fx',
     rows: [
+      { key: 'drive', label: 'drive', min: 0, max: 1, format: pct },
       { key: 'chorus', label: 'chorus', min: 0, max: 1, format: pct },
       { key: 'delay', label: 'delay', min: 0, max: 1, format: pct },
       { key: 'delayTime', label: 'time', min: 0.03, max: 1, log: true, format: sec },

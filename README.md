@@ -4,7 +4,7 @@ Un sintetizador en el navegador, con su sonido dibujado en tiempo real. Un exper
 
 - Se toca con el teclado del ordenador, como en casi todos los sintes de navegador: la fila de la A son las teclas blancas (A = do, hasta la Ñ) y la de encima, las negras (W, E, T, Y, U, O, P). Z y X bajan y suben una octava. O con el teclado de la pantalla, con el dedo o el ratón (arrastrando se pasa de una tecla a otra).
 - Hasta 12 notas a la vez. Cada voz: un oscilador (sin, tri, saw, sqr; con varias voces desafinadas entre sí, *unison*), su envolvente de volumen y un filtro de paso bajo de 24 dB con su propia envolvente.
-- Un LFO que se aplica al filtro, al tono (vibrato) o al volumen (trémolo), y efectos: chorus, delay y reverb.
+- Un LFO que se aplica al filtro, al tono (vibrato) o al volumen (trémolo), y efectos: drive (distorsión), chorus, delay y reverb.
 - Seis presets (init, pad, bass, pluck, lead, drone) y el panel de la derecha para cambiarlo todo. Doble clic en un deslizador: vuelve al valor del preset.
 - **Random** (o la tecla R): una variación al azar del preset elegido, siempre desde sus valores. Tiempos y frecuencias, de la mitad al doble más o menos; mezclas y cantidades, un poco arriba o abajo. Lo que el preset tiene a cero se queda a cero, y la onda, el destino del LFO y el volumen no cambian.
 - El sonido se enciende solo con la primera nota; el altavoz de arriba lo apaga y lo enciende. Sin el foco de la ventana, se calla.
