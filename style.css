@@ -803,6 +803,18 @@ body {
   border-color: var(--ink);
 }
 
+/* La caja: la intensidad, en lo relleno del paso (baja, un tercio; media, dos; alta,
+   entero). */
+.seq .seq__cell.is-on[data-level='1'] {
+  background: color-mix(in srgb, var(--ink) 38%, var(--page));
+  border-color: var(--ink);
+}
+
+.seq .seq__cell.is-on[data-level='2'] {
+  background: color-mix(in srgb, var(--ink) 68%, var(--page));
+  border-color: var(--ink);
+}
+
 /* El paso marcado (ahí va lo que se grabe paso a paso). */
 .seq .seq__cell.is-cursor {
   outline: 1px solid var(--ink);

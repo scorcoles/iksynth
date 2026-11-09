@@ -7,13 +7,16 @@
 //
 //   synth → una fila: las notas de cada paso (las largas tiñen los pasos que ocupan);
 //   acid  → tres filas: la nota, el accent y el slide;
-//   drums → siete filas, una por instrumento.
+//   drums → siete filas, una por instrumento; cada paso, más relleno cuanto más fuerte.
 //
-// Tocar un paso de notas lo marca (ahí va lo que se grabe paso a paso); tocar accent,
-// slide o un paso de la caja lo enciende o lo apaga. Cada cuatro pasos, un poco de aire:
+// Tocar un paso de notas lo marca (ahí va lo que se grabe paso a paso); tocar accent o
+// slide lo enciende o lo apaga; tocar un paso de la caja le sube la intensidad (baja,
+// media, alta y, otra vez, apagado). Cada cuatro pasos, un poco de aire:
 // los tiempos del compás.
 
 import { STEPS, TRACKS } from './sequencer.js';
+
+const LEVEL_NAMES = ['', 'baja', 'media', 'alta'];
 import { VOICES } from './drums.js';
 import { noteName } from './keys.js';
 
@@ -108,6 +111,7 @@ export function createSeqView(root, seq, actions) {
       const b = button('seq__cell', c.text ?? '');
       b.dataset.step = s;
       b.classList.toggle('is-on', !!c.on);
+      if (c.level) b.dataset.level = c.level;
       b.classList.toggle('is-tied', !!c.tied);
       b.classList.toggle('is-cursor', !!c.cursor);
       b.classList.toggle('is-beat', s % 4 === 0);
@@ -170,9 +174,10 @@ export function createSeqView(root, seq, actions) {
     } else {
       VOICES.forEach((v, i) => {
         row(v, null, (s) => ({
-          on: st.drums[i][s],
+          on: st.drums[i][s] > 0,
+          level: st.drums[i][s],
           cursor: seq.cursor === s && seq.recording && !seq.playing,
-          label: `${v} en el paso ${s + 1}`,
+          label: `${v} en el paso ${s + 1}${st.drums[i][s] ? `, intensidad ${LEVEL_NAMES[st.drums[i][s]]}` : ''}`,
           onClick: () => {
             seq.toggleDrum(i, s);
             seq.setCursor(s);

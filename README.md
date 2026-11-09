@@ -12,7 +12,7 @@ Un sintetizador en el navegador, con un bajo ácido, una caja de ritmos y un sec
 
 - Se toca la pista elegida (1, 2 y 3, o sus pestañas) con el teclado del ordenador: la fila de la A son las teclas blancas (A = do, hasta la Ñ) y la de encima, las negras (W, E, T, Y, U, O, P); Z y X bajan y suben una octava. O con el teclado de la pantalla (arrastrando se pasa de una tecla a otra). Con la caja, cada tecla blanca es un instrumento (A = kick, S = snare…), y su nombre se ve en la tecla.
 - **rec** en marcha: lo que se toca se cuadra al paso más cercano (en el synth, con su largo al soltar). **rec** parado: paso a paso; cada nota o acorde va al paso marcado y, al soltar, pasa al siguiente.
-- En la rejilla: tocar un paso de notas lo marca; accent, slide y los pasos de la caja se encienden y apagan tocándolos. **del** (o retroceso) borra el paso marcado; **clear**, dos veces, la pista entera.
+- En la rejilla: tocar un paso de notas lo marca; accent y slide se encienden y apagan tocándolos. En la caja, cada toque sube la intensidad del paso (baja, media, alta y, otra vez, apagado), y se ve en lo relleno que está; lo grabado tocando entra en media. **del** (o retroceso) borra el paso marcado; **clear**, dos veces, la pista entera.
 - Espacio, play y stop. Tempo (de 40 a 240 bpm; con mayúsculas, de diez en diez) y swing.
 - Los sonidos, las secuencias y la pista elegida se guardan en el navegador.
 

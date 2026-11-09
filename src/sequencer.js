@@ -7,7 +7,8 @@
 //   synth → en cada paso, las notas que empiezan ahí y cuántos pasos duran (acordes, notas
 //           largas);
 //   acid  → en cada paso, una nota o nada, y si lleva accent y slide;
-//   drums → siete filas (un instrumento cada una) de 16 pasos, encendidos o no.
+//   drums → siete filas (un instrumento cada una) de 16 pasos, cada uno apagado (0) o con
+//           su intensidad: baja (1), media (2) o alta (3).
 //
 // Grabar (REC):
 //   - en marcha, lo que se toca se cuadra al paso más cercano (con su largo, al soltar);
@@ -23,13 +24,16 @@ import { VOICES } from './drums.js';
 
 export const STEPS = 16;
 export const TRACKS = ['synth', 'acid', 'drums'];
+// La fuerza de cada intensidad de la caja (la 0 no suena), y la de lo que se graba tocando.
+export const LEVELS = [0, 0.35, 0.65, 1];
+const RECORD_LEVEL = 2;
 
 const emptyState = () => ({
   bpm: 120,
   swing: 0,
   synth: Array.from({ length: STEPS }, () => []),
   acid: Array.from({ length: STEPS }, () => null),
-  drums: VOICES.map(() => Array(STEPS).fill(false)),
+  drums: VOICES.map(() => Array(STEPS).fill(0)),
 });
 
 // engines: { synth, acid, drums }. onChange: algo cambió en las secuencias (para pintar y
@@ -94,7 +98,7 @@ export function createSequencer(engines, { onChange, onStep, onBeat }) {
     {
       state.drums.forEach((row, v) => {
         if (row[step] && !skip('drums', v)) {
-          engines.drums.trigger(v, time);
+          engines.drums.trigger(v, time, LEVELS[row[step]]);
           beats.add(v === 0 ? 'kick' : 'drums');
         }
       });
@@ -136,7 +140,7 @@ export function createSequencer(engines, { onChange, onStep, onBeat }) {
         liveStarts.set(value, { step, pos });
       } else if (track === 'acid') {
         state.acid[step] = { midi: value, accent: state.acid[step]?.accent || false, slide: state.acid[step]?.slide || false };
-      } else state.drums[value][step] = true;
+      } else state.drums[value][step] ||= RECORD_LEVEL;
     } else {
       stepHeld.add(`${track}:${value}`);
       stepWrote = true;
@@ -144,7 +148,7 @@ export function createSequencer(engines, { onChange, onStep, onBeat }) {
         if (!state.synth[cursor].some((n) => n.midi === value)) state.synth[cursor].push({ midi: value, len: 1 });
       } else if (track === 'acid') {
         state.acid[cursor] = { midi: value, accent: state.acid[cursor]?.accent || false, slide: state.acid[cursor]?.slide || false };
-      } else state.drums[value][cursor] = true;
+      } else state.drums[value][cursor] ||= RECORD_LEVEL;
     }
     onChange();
   }
@@ -223,8 +227,9 @@ export function createSequencer(engines, { onChange, onStep, onBeat }) {
     noteOff,
 
     // Editar a mano, desde la rejilla.
+    // Cada toque sube un nivel: apagado → baja → media → alta → apagado.
     toggleDrum(voice, step) {
-      state.drums[voice][step] = !state.drums[voice][step];
+      state.drums[voice][step] = (state.drums[voice][step] + 1) % LEVELS.length;
       onChange();
     },
     toggleAcid(step, flag) {
@@ -236,7 +241,7 @@ export function createSequencer(engines, { onChange, onStep, onBeat }) {
     clearStep(track, step = cursor) {
       if (track === 'synth') state.synth[step] = [];
       else if (track === 'acid') state.acid[step] = null;
-      else state.drums.forEach((row) => (row[step] = false));
+      else state.drums.forEach((row) => (row[step] = 0));
       onChange();
     },
     clearTrack(track) {
@@ -254,7 +259,10 @@ export function createSequencer(engines, { onChange, onStep, onBeat }) {
         swing: Number(saved.swing) || 0,
         synth: ok(saved.synth, STEPS) ? saved.synth.map((s) => (Array.isArray(s) ? s.filter((n) => Number.isFinite(n?.midi)) : [])) : base.synth,
         acid: ok(saved.acid, STEPS) ? saved.acid.map((s) => (s && Number.isFinite(s.midi) ? { midi: s.midi, accent: !!s.accent, slide: !!s.slide } : null)) : base.acid,
-        drums: ok(saved.drums, VOICES.length) ? saved.drums.map((r) => (ok(r, STEPS) ? r.map(Boolean) : Array(STEPS).fill(false))) : base.drums,
+        // Lo guardado antes de las intensidades (encendido o no) entra en media.
+        drums: ok(saved.drums, VOICES.length)
+          ? saved.drums.map((r) => (ok(r, STEPS) ? r.map((v) => (v === true ? RECORD_LEVEL : Math.max(0, Math.min(3, Math.round(Number(v) || 0))))) : Array(STEPS).fill(0)))
+          : base.drums,
       };
       transport.bpm.value = state.bpm;
       transport.swing = state.swing * 0.6;
