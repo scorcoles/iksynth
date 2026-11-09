@@ -231,10 +231,44 @@ function buildBody(spec, engine, onEdit) {
       input.max = STEPS;
       input.step = 1;
       const out = el('span', 'synth__value');
+      // El knob (solo se ve en el modo unit): gira con el valor del deslizador, y
+      // arrastrarlo hacia arriba o a la derecha lo sube (con mayúsculas, fino). El
+      // deslizador sigue ahí, escondido, para el teclado y los lectores de pantalla.
+      const knob = el('span', 'synth__knob');
+      knob.setAttribute('aria-hidden', 'true');
+      knob.append(el('span', 'synth__cap'));
+      const showKnob = () => knob.style.setProperty('--t', String(Number(input.value) / STEPS));
+      knob.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        knob.setPointerCapture(e.pointerId);
+        input.focus({ preventScroll: true });
+        let last = { x: e.clientX, y: e.clientY };
+        let at = Number(input.value);
+        const move = (ev) => {
+          const d = last.y - ev.clientY + (ev.clientX - last.x);
+          last = { x: ev.clientX, y: ev.clientY };
+          at = Math.max(0, Math.min(STEPS, at + d * (ev.shiftKey ? 1 : 5)));
+          const v = Math.round(at);
+          if (v === Number(input.value)) return;
+          input.value = v;
+          input.dispatchEvent(new Event('input'));
+        };
+        const up = () => {
+          knob.removeEventListener('pointermove', move);
+          knob.removeEventListener('pointerup', up);
+          knob.removeEventListener('pointercancel', up);
+        };
+        knob.addEventListener('pointermove', move);
+        knob.addEventListener('pointerup', up);
+        knob.addEventListener('pointercancel', up);
+      });
+      knob.addEventListener('dblclick', () => input.dispatchEvent(new MouseEvent('dblclick')));
       input.addEventListener('input', () => {
         const v = toValue(row, Number(input.value));
         engine.set(row.key, v);
         out.textContent = row.format(v);
+        showKnob();
         onEdit();
       });
       // Doble clic: vuelve al valor del preset (o al de serie).
@@ -246,8 +280,9 @@ function buildBody(spec, engine, onEdit) {
       refreshers.push(() => {
         input.value = toSlider(row, engine.params[row.key]);
         out.textContent = row.format(engine.params[row.key]);
+        showKnob();
       });
-      line.append(name, input, out);
+      line.append(name, input, knob, out);
       box.append(line);
     }
     body.append(box);

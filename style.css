@@ -365,6 +365,10 @@ body {
   min-height: 20px;
 }
 
+.synth__knob {
+  display: none;
+}
+
 .synth__value {
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -930,10 +934,10 @@ body {
 }
 
 /* =========================================================================================
-   unit: todo como un aparato. Cuerpo de aluminio, la esfera en una pantallita negra con
-   su bisel, el panel como un menú de esa pantalla, teclas de verdad que se hunden, una
-   pantallita naranja para el tempo y cuatro ruedas de colores (azul, verde, blanco y
-   naranja) que tiñen las pistas y los deslizadores.
+   unit: todo como un aparato. Cuerpo de aluminio; arriba, una pantallita negra con su
+   bisel (un recuadro, no toda la página) y, a su lado, la placa de knobs con el sonido de
+   la pista; debajo, el secuenciador y el teclado con teclas que se hunden. Cuatro colores,
+   como sus ruedas: azul, verde, blanco y naranja.
    ========================================================================================= */
 
 html[data-mode='unit'] {
@@ -941,15 +945,23 @@ html[data-mode='unit'] {
   --ink: #1b1b1b;
   --blue: #3d7bff;
   --green: #22c25f;
-  --white: #f0f0f0;
+  --white: #f4f4f1;
   --orange: #ff5b1a;
   --cap: #f1f1ed;
   --cap-edge: #a9a9a3;
+  --plate: #cdcdc8;
   --screen: #0b0b0b;
 }
 
 html[data-mode='unit'] body {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  column-gap: 1.5rem;
+  padding: 0 1.5rem;
   background: linear-gradient(180deg, #e2e2de 0%, #d3d3ce 100%);
+}
+
+html[data-mode='unit'] :is(.top, .seq, .keys, .foot) {
+  grid-column: 1 / -1;
 }
 
 html[data-mode='unit'] :is(.brand, .foot p, .synth, .keys, .seq, .toast) {
@@ -960,12 +972,11 @@ html[data-mode='unit'] :is(.brand, .foot p, .synth, .keys, .seq, .toast) {
 }
 
 html[data-mode='unit'] :is(.foot p, .synth, .keys, .seq, .toast) {
-  font-size: 10px;
+  font-size: 11px;
 }
 
 html[data-mode='unit'] .brand {
   font-weight: 700;
-  text-transform: none;
 }
 
 /* Las cuatro ruedas, arriba en el centro: solo de adorno. */
@@ -985,14 +996,19 @@ html[data-mode='unit'] .top::after {
   pointer-events: none;
 }
 
-/* La pantallita: el dibujo deja de ocupar todo y se mete en un hueco con bisel. */
+/* La pantallita: un recuadro 4:3 con bisel, a la izquierda. */
 html[data-mode='unit'] .panel {
   position: relative;
   inset: auto;
   grid-row: 2;
   grid-column: 1;
+  justify-self: center;
+  align-self: center;
+  height: calc(100% - 12px);
+  width: auto;
+  max-width: calc(100% - 12px);
+  aspect-ratio: 4 / 3;
   min-height: 0;
-  margin: 2px 4px;
   overflow: hidden;
   border-radius: 10px;
   background: var(--screen);
@@ -1002,51 +1018,105 @@ html[data-mode='unit'] .panel {
     0 1px 0 6px #f4f4f0;
 }
 
-/* El panel: un menú de la pantallita, claro sobre negro. */
+/* La placa de knobs, a la derecha de la pantalla. */
 html[data-mode='unit'] .synth {
-  --ink: rgb(14 14 14 / 0.88);
-  --page: #e8e8e8;
-  grid-column: 1;
-  margin: 10px 12px;
-  max-height: calc(100% - 20px);
-  border: 1px solid #2c2c2c;
-  border-radius: 6px;
-  backdrop-filter: blur(3px);
+  --ink: var(--plate);
+  --page: #1b1b1b;
+  grid-row: 2;
+  grid-column: 2;
+  justify-self: stretch;
+  align-self: stretch;
+  width: auto;
+  border-radius: 8px;
+  box-shadow:
+    inset 0 1px 2px rgb(0 0 0 / 0.18),
+    0 1px 0 #f4f4f0;
+}
+
+html[data-mode='unit'] .synth__head {
+  padding: 0.7rem 0.9rem 0.4rem;
 }
 
 html[data-mode='unit'] .synth__head span:first-child {
+  padding: 1px 6px;
   border-radius: 2px;
   background: var(--orange);
   color: #fff;
 }
 
+html[data-mode='unit'] .synth.is-open .synth__body:not([hidden]) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 0.3rem 0.9rem 0.9rem;
+}
+
+/* Cada sección, un recuadro impreso en la placa, con sus knobs en fila. */
 html[data-mode='unit'] .synth__section {
-  border-top-color: #2c2c2c;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 4px 2px;
+  padding: 6px 8px 8px;
+  border: 1px solid #b3b3ad;
+  border-radius: 6px;
 }
 
 html[data-mode='unit'] .synth__title {
-  opacity: 0.45;
+  flex-basis: 100%;
+  margin: 0 0 2px;
+  opacity: 0.5;
 }
 
-html[data-mode='unit'] .synth__choice button {
-  border-color: #3a3a3a;
+html[data-mode='unit'] .synth__choice {
+  flex-basis: 100%;
+  gap: 4px;
+}
+
+html[data-mode='unit'] .synth__choice button,
+html[data-mode='unit'] .synth__random {
+  padding: 5px 9px;
+  border: 0;
   border-radius: 3px;
-}
-
-html[data-mode='unit'] .synth__choice button.is-on {
-  border-color: var(--page);
-  background: var(--page);
-  color: #111;
+  background: var(--cap);
+  color: var(--page);
+  box-shadow: 0 1.5px 0 var(--cap-edge);
 }
 
 html[data-mode='unit'] .synth__random {
-  border-color: #4a4a4a;
-  border-radius: 3px;
+  flex-basis: 100%;
+  margin: 2px 0 0;
 }
 
-/* Cada deslizador, del color de una de las cuatro ruedas, por turnos. */
+html[data-mode='unit'] .synth__choice button.is-on,
+html[data-mode='unit'] .synth__random:active {
+  background: var(--page);
+  color: var(--cap);
+  box-shadow: 0 1.5px 0 #000;
+}
+
+@media (hover: hover) {
+  html[data-mode='unit'] .synth__choice button:not(.is-on):hover {
+    background: #fafaf7;
+  }
+
+  html[data-mode='unit'] .synth__random:hover {
+    border: 0;
+    background: #fafaf7;
+  }
+}
+
+/* Un control: el knob, su valor y su nombre, en columna. Cada uno del color de una de
+   las ruedas, por turnos. */
 html[data-mode='unit'] .synth__row {
   --knob: var(--blue);
+  position: relative;
+  display: grid;
+  grid-template: 'knob' auto 'value' auto 'label' auto / 58px;
+  justify-items: center;
+  gap: 2px;
+  min-height: 0;
 }
 
 html[data-mode='unit'] .synth__row:nth-of-type(4n + 2) {
@@ -1061,35 +1131,88 @@ html[data-mode='unit'] .synth__row:nth-of-type(4n) {
   --knob: var(--orange);
 }
 
-html[data-mode='unit'] .synth input[type='range']::-webkit-slider-runnable-track {
-  height: 2px;
-  border-radius: 1px;
-  background: #383838;
+html[data-mode='unit'] .synth__label {
+  grid-area: label;
+  opacity: 0.7;
+  white-space: nowrap;
 }
 
-html[data-mode='unit'] .synth input[type='range']::-moz-range-track {
-  height: 2px;
-  border-radius: 1px;
-  background: #383838;
+html[data-mode='unit'] .synth__value {
+  grid-area: value;
+  text-align: center;
+  font-size: 10px;
 }
 
-html[data-mode='unit'] .synth input[type='range']::-webkit-slider-thumb {
-  width: 11px;
-  height: 11px;
-  margin-top: -4.5px;
+/* El deslizador, escondido pero ahí (para el teclado y los lectores de pantalla). */
+html[data-mode='unit'] .synth__row input[type='range'] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* El knob: un anillo con lo que lleva girado (de abajo a la izquierda a abajo a la
+   derecha, 270°) y el capuchón de color con su muesca. */
+html[data-mode='unit'] .synth__knob {
+  grid-area: knob;
+  display: block;
+  position: relative;
+  width: 40px;
+  height: 40px;
+  margin-top: 2px;
   border-radius: 50%;
-  background: var(--knob);
+  background: conic-gradient(from 225deg, var(--page) 0 calc(var(--t, 0) * 270deg), #b0b0aa 0 270deg, transparent 0);
+  cursor: ns-resize;
+  touch-action: none;
 }
 
-html[data-mode='unit'] .synth input[type='range']::-moz-range-thumb {
-  width: 11px;
-  height: 11px;
+html[data-mode='unit'] .synth__cap {
+  position: absolute;
+  inset: 5px;
   border-radius: 50%;
-  background: var(--knob);
+  background: radial-gradient(circle at 50% 30%, rgb(255 255 255 / 0.45), transparent 65%), var(--knob);
+  box-shadow:
+    0 2px 0 rgb(0 0 0 / 0.28),
+    0 3px 5px rgb(0 0 0 / 0.18);
+  transform: rotate(calc(var(--t, 0) * 270deg - 135deg));
+}
+
+html[data-mode='unit'] .synth__cap::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  width: 2px;
+  height: 9px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: #fff;
+}
+
+html[data-mode='unit'] .synth__row:nth-of-type(4n + 3) .synth__cap::after {
+  background: #1b1b1b;
+}
+
+html[data-mode='unit'] .synth__row:focus-within .synth__knob {
+  outline: 1.5px solid var(--page);
+  outline-offset: 2px;
 }
 
 /* Los botones del secuenciador: teclas claras que se hunden. */
+html[data-mode='unit'] .seq {
+  margin: 1.25rem 0 1rem;
+}
+
+html[data-mode='unit'] .seq__bar {
+  gap: 8px 12px;
+  margin-bottom: 10px;
+}
+
 html[data-mode='unit'] .seq button {
+  padding: 6px 11px;
   border: 0;
   border-radius: 3px;
   background: var(--cap);
@@ -1139,7 +1262,7 @@ html[data-mode='unit'] .seq__rec.is-on::before {
 
 /* El tempo, en una pantallita negra con números naranjas. */
 html[data-mode='unit'] .seq__field {
-  padding: 3px 7px 3px 4px;
+  padding: 6px 9px 6px 6px;
   border: 0;
   border-radius: 3px;
   background: var(--screen);
@@ -1153,10 +1276,16 @@ html[data-mode='unit'] .seq__field:focus-within {
 }
 
 html[data-mode='unit'] .seq__swing input {
+  width: 6.5rem;
   accent-color: var(--orange);
 }
 
+html[data-mode='unit'] .seq .seq__close {
+  padding: 6px 8px;
+}
+
 html[data-mode='unit'] .seq .seq__add {
+  padding: 6px 11px;
   background: transparent;
   box-shadow: inset 0 0 0 1px var(--cap-edge);
 }
@@ -1164,10 +1293,12 @@ html[data-mode='unit'] .seq .seq__add {
 /* La rejilla: cada pista, de un color (synth, naranja; acid, verde; drums, azul). */
 html[data-mode='unit'] .seq__grid {
   --hue: var(--orange);
-  padding: 6px;
+  padding: 8px;
   border-radius: 6px;
-  background: #c9c9c4;
-  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.18);
+  background: var(--plate);
+  box-shadow:
+    inset 0 1px 2px rgb(0 0 0 / 0.18),
+    0 1px 0 #f4f4f0;
 }
 
 html[data-mode='unit'] .seq__grid[data-track='acid'] {
@@ -1178,9 +1309,26 @@ html[data-mode='unit'] .seq__grid[data-track='drums'] {
   --hue: var(--blue);
 }
 
+html[data-mode='unit'] .seq__row {
+  grid-template-columns: 4rem repeat(16, 1fr);
+  gap: 3px;
+  margin-bottom: 4px;
+}
+
+html[data-mode='unit'] .seq__row:last-child {
+  margin-bottom: 0;
+}
+
 html[data-mode='unit'] .seq .seq__cell {
+  height: 20px;
+  padding: 0;
   border: 0;
   border-radius: 2px;
+}
+
+html[data-mode='unit'] .seq__row--notes .seq__cell {
+  height: 34px;
+  font-size: 10px;
 }
 
 html[data-mode='unit'] .seq .seq__cell.is-tied {
@@ -1211,10 +1359,16 @@ html[data-mode='unit'] .seq .seq__cell.is-on.is-now {
   filter: none;
 }
 
-/* El teclado: teclas sueltas, con aire entre ellas, que se hunden; las negras, de
-   grafito; al pulsarlas, un piloto del color de la pista. */
+/* El teclado: más alto, teclas sueltas que se hunden; las negras, de grafito; al
+   pulsarlas, un piloto naranja. Y aire de sobra hasta el pie. */
+html[data-mode='unit'] .keys {
+  height: 6.5rem;
+  gap: 1rem;
+  margin: 0 0 1.75rem;
+}
+
 html[data-mode='unit'] .keys__board {
-  gap: 3px;
+  gap: 4px;
 }
 
 html[data-mode='unit'] .key {
@@ -1222,32 +1376,32 @@ html[data-mode='unit'] .key {
   border-radius: 4px;
   background: var(--cap);
   box-shadow:
-    0 2.5px 0 var(--cap-edge),
-    0 3px 5px rgb(0 0 0 / 0.14);
+    0 3px 0 var(--cap-edge),
+    0 4px 6px rgb(0 0 0 / 0.14);
   transition: transform 50ms ease, box-shadow 50ms ease;
 }
 
 html[data-mode='unit'] .key.is-down {
   background: #e4e4df;
   transform: translateY(2px);
-  box-shadow: 0 0.5px 0 var(--cap-edge);
+  box-shadow: 0 1px 0 var(--cap-edge);
 }
 
 html[data-mode='unit'] .key.is-down::after {
   content: '';
   position: absolute;
-  top: 6px;
+  top: 8px;
   left: 50%;
-  width: 6px;
-  height: 6px;
-  margin-left: -3px;
+  width: 7px;
+  height: 7px;
+  margin-left: -3.5px;
   border-radius: 50%;
   background: var(--orange);
 }
 
 html[data-mode='unit'] .keys.has-names .key.is-down::after {
   top: auto;
-  bottom: 16px;
+  bottom: 20px;
 }
 
 html[data-mode='unit'] .key--black {
@@ -1256,16 +1410,28 @@ html[data-mode='unit'] .key--black {
   border-radius: 3px;
   background: #2a2a2a;
   box-shadow:
-    0 2.5px 0 #0e0e0e,
-    0 3px 5px rgb(0 0 0 / 0.25);
+    0 3px 0 #0e0e0e,
+    0 4px 6px rgb(0 0 0 / 0.25);
 }
 
 html[data-mode='unit'] .key--black.is-down {
   background: #333;
-  box-shadow: 0 0.5px 0 #0e0e0e;
+  box-shadow: 0 1px 0 #0e0e0e;
 }
 
-html[data-mode='unit'] :is(.key__label, .key__name, .key.is-down .key__label, .key.is-down .key__name) {
+html[data-mode='unit'] :is(.key__label, .key__name) {
+  color: #555;
+}
+
+html[data-mode='unit'] .key__label {
+  bottom: 6px;
+}
+
+html[data-mode='unit'] .key__name {
+  top: 6px;
+}
+
+html[data-mode='unit'] :is(.key.is-down .key__label, .key.is-down .key__name) {
   color: #555;
 }
 
@@ -1274,14 +1440,19 @@ html[data-mode='unit'] :is(.key--black .key__label, .key--black.is-down .key__la
 }
 
 /* La octava: dos ruedas, azul para bajar y naranja para subir. */
+html[data-mode='unit'] .keys__octave {
+  width: 3.4rem;
+}
+
 html[data-mode='unit'] .keys__octave button {
   flex: none;
-  width: 1.9rem;
-  height: 1.9rem;
+  width: 2.3rem;
+  height: 2.3rem;
   border: 0;
   border-radius: 50%;
-  background: radial-gradient(circle at 50% 40%, rgb(255 255 255 / 0.3), transparent 60%), var(--blue);
+  background: radial-gradient(circle at 50% 35%, rgb(255 255 255 / 0.35), transparent 60%), var(--blue);
   color: #fff;
+  font-size: 15px;
   box-shadow:
     0 2px 0 rgb(0 0 0 / 0.3),
     0 0 0 3px #c4c4bf;
@@ -1299,6 +1470,10 @@ html[data-mode='unit'] .keys__octave button:active {
 }
 
 /* El pie y el aviso: una tira de grafito con las esquinas redondeadas. */
+html[data-mode='unit'] .foot {
+  margin-bottom: 1.25rem;
+}
+
 html[data-mode='unit'] .foot,
 html[data-mode='unit'] .toast {
   border-radius: 4px;
@@ -1310,14 +1485,43 @@ html[data-mode='unit'] .foot__tag {
   color: #fff;
 }
 
+/* En el móvil: una sola columna. La pantalla, a todo el ancho; la placa, encima de ella
+   (plegada de entrada), y el resto, como siempre. */
 @media (max-width: 47.99rem) {
-  html[data-mode='unit'] .synth {
+  html[data-mode='unit'] body {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0 var(--side);
+  }
+
+  html[data-mode='unit'] .panel {
+    height: auto;
     width: auto;
+    max-width: none;
+    aspect-ratio: auto;
+    justify-self: stretch;
+    align-self: stretch;
     margin: 6px;
-    max-height: calc(100% - 12px);
+  }
+
+  html[data-mode='unit'] .synth {
+    grid-column: 1;
+    align-self: start;
+    margin: 12px;
+    max-height: calc(100% - 24px);
+    background: var(--plate);
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.3);
   }
 
   html[data-mode='unit'] .top::after {
     display: none;
+  }
+
+  html[data-mode='unit'] .keys {
+    margin-bottom: 1.25rem;
+  }
+
+  html[data-mode='unit'] .seq__row {
+    grid-template-columns: 2.8rem repeat(16, 1fr);
+    gap: 2px;
   }
 }
