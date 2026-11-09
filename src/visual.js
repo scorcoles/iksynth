@@ -221,12 +221,85 @@ function createOrb() {
 
 // ---- todo junto -----------------------------------------------------------------------------
 
+// Arrastrar la esfera: gira con el dedo o el ratón alrededor del eje perpendicular al
+// gesto (en horizontal, el vertical; en vertical, el horizontal; en diagonal, uno
+// inclinado) y, al soltarla, sigue por inercia y se va frenando. Cuanto más largo el
+// arrastre, más le cuesta frenar: de FRICTION_MAX (uno cortito) a FRICTION_MIN (uno de
+// media pantalla o más), por segundo.
+const DRAG_TURN = 3.2; // radianes por pantalla arrastrada
+const FRICTION_MAX = 3.5;
+const FRICTION_MIN = 0.35;
+const SPIN_MAX = 14; // radianes por segundo, como mucho
+
 export function createVisual(scene) {
   const orb = createOrb();
-  scene.add(orb.object);
+  // El giro a mano va por fuera; el lento de siempre y los empujones, por dentro.
+  const holder = new THREE.Group();
+  holder.add(orb.object);
+  scene.add(holder);
   scene.fog = new THREE.Fog(0x000000, 2, 9);
 
+  const axis = new THREE.Vector3();
+  const turn = new THREE.Quaternion();
+  // La inercia: hacia dónde gira (eje) y cuánto (radianes por segundo), y su rozamiento.
+  const spinAxis = new THREE.Vector3(0, 1, 0);
+  let spin = 0;
+  let friction = FRICTION_MAX;
+  // El arrastre en curso: lo recorrido (en pantallas) y los últimos movimientos, para la
+  // velocidad al soltar.
+  let drag = null;
+
+  const rotate = (dx, dy, angle) => {
+    axis.set(-dy, dx, 0);
+    if (axis.lengthSq() < 1e-12 || !angle) return;
+    turn.setFromAxisAngle(axis.normalize(), angle);
+    holder.quaternion.premultiply(turn);
+  };
+
   return {
+    // x, y: el puntero, en pantallas (0–1 en el lado corto), con y hacia arriba.
+    grab(x, y) {
+      drag = { x, y, path: 0, moves: [] };
+      spin = 0;
+    },
+    move(x, y) {
+      if (!drag) return;
+      const dx = x - drag.x;
+      const dy = y - drag.y;
+      drag.x = x;
+      drag.y = y;
+      const d = Math.hypot(dx, dy);
+      drag.path += d;
+      rotate(dx, dy, d * DRAG_TURN);
+      const now = performance.now();
+      drag.moves.push({ dx, dy, t: now });
+      while (drag.moves.length && now - drag.moves[0].t > 90) drag.moves.shift();
+    },
+    release() {
+      if (!drag) return;
+      // La velocidad de los últimos 90 ms (si se paró antes de soltar, no hay inercia).
+      const now = performance.now();
+      const recent = drag.moves.filter((m) => now - m.t <= 90);
+      let sx = 0;
+      let sy = 0;
+      for (const m of recent) {
+        sx += m.dx;
+        sy += m.dy;
+      }
+      const span = recent.length ? Math.max(16, now - recent[0].t) / 1000 : 1;
+      const speed = (Math.hypot(sx, sy) / span) * DRAG_TURN;
+      spin = recent.length ? Math.min(SPIN_MAX, speed) : 0;
+      spinAxis.set(-sy, sx, 0);
+      if (spinAxis.lengthSq() > 1e-12) spinAxis.normalize();
+      else spin = 0;
+      const t = Math.min(1, drag.path / 0.5);
+      friction = FRICTION_MAX + (FRICTION_MIN - FRICTION_MAX) * t;
+      drag = null;
+    },
+    get dragging() {
+      return !!drag;
+    },
+
     setLook(look, page, ink, pixelRatio) {
       orb.setLook(look, ink, pixelRatio);
       scene.fog.color.set(page);
@@ -235,6 +308,11 @@ export function createVisual(scene) {
     // bands: el espectro en bandas (0–1); wave: la onda (−1 a 1); hit: lo reciente que es
     // la última nota (1 recién pulsada, 0 hace rato); kicked: si acaba de pulsarse una.
     update(dt, bands, wave, hit, kicked) {
+      if (!drag && spin > 0.001) {
+        turn.setFromAxisAngle(spinAxis, spin * dt);
+        holder.quaternion.premultiply(turn);
+        spin *= Math.exp(-friction * dt);
+      }
       orb.update(dt, bands, wave, hit, kicked);
     },
   };

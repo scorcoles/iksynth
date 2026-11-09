@@ -329,6 +329,28 @@ window.addEventListener('pointermove', (e) => {
   pointer.y = 1 - (e.clientY / innerHeight) * 2;
 });
 
+// Arrastrar la esfera para girarla (visual.js): con el ratón o el dedo, sobre el dibujo.
+const toShort = (e) => {
+  const short = Math.min(canvas.clientWidth, canvas.clientHeight) || 1;
+  return [e.clientX / short, -e.clientY / short];
+};
+canvas.addEventListener('pointerdown', (e) => {
+  if (!e.isPrimary) return;
+  canvas.setPointerCapture(e.pointerId);
+  canvas.classList.add('is-dragging');
+  visual.grab(...toShort(e));
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (e.isPrimary && visual.dragging) visual.move(...toShort(e));
+});
+for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+  canvas.addEventListener(type, (e) => {
+    if (!e.isPrimary || !visual.dragging) return;
+    canvas.classList.remove('is-dragging');
+    visual.release();
+  });
+}
+
 // Cada fotograma.
 const bands = new Float32Array(BANDS);
 const eye = new THREE.Vector3();

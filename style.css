@@ -48,6 +48,12 @@ body {
   height: 100%;
   display: block;
   touch-action: none;
+  /* La esfera se arrastra para girarla. */
+  cursor: grab;
+}
+
+.panel canvas.is-dragging {
+  cursor: grabbing;
 }
 
 /* Arriba: el símbolo y los botones. Deja pasar el ratón y el dedo a los puntos, salvo en

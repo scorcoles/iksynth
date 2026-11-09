@@ -23,6 +23,7 @@ Demo: [scorcoles.github.io/iksynth](https://scorcoles.github.io/iksynth/) · En 
 
 - **Random** (o la tecla R), en synth y acid: una variación al azar del preset elegido, siempre desde sus valores. Tiempos y frecuencias, de la mitad al doble más o menos; mezclas y cantidades, un poco arriba o abajo. Lo que el preset tiene a cero se queda a cero.
 - El sonido se enciende solo con la primera nota o el primer play; el altavoz de arriba lo apaga y lo enciende. Sin el foco de la ventana, se calla.
+- La esfera se arrastra para girarla: gira alrededor del eje perpendicular al gesto (en horizontal, el vertical; en vertical, el horizontal; en diagonal, uno inclinado) y, al soltarla, sigue por inercia; cuanto más largo el arrastre, más le cuesta frenar.
 - Dos modos (← Prev · Next → en el pie, las flechas o `#wire`): **orb**, una esfera de puntos que respira con el sonido (los graves empujan el ecuador, los agudos los polos, y la onda la riza alrededor), azul hielo sobre negro; **wire**, la misma esfera en malla gris sobre papel.
 
 ## Cómo está hecho
