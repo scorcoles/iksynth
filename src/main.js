@@ -17,7 +17,8 @@
 //   visual.js    → lo que se ve: la cordillera del espectro, la esfera y su malla
 //   panel.js     → el panel con el sonido de cada pista
 //   keys.js      → tocar: el teclado del ordenador y el de la pantalla
-//   share.js     → compartir una foto
+//   song.js      → la canción en la URL
+//   share.js     → compartir la canción, con un enlace
 //   main.js      → el escenario, la cámara, los modos, las pistas y el bucle (este archivo)
 //
 // Tres modos, con «Prev» y «Next» en el pie, las flechas del teclado o la dirección
@@ -36,6 +37,7 @@ import { createVisual, toBands, BANDS } from './visual.js';
 import { createPanel } from './panel.js';
 import { setupKeys } from './keys.js';
 import { setupShare } from './share.js';
+import { encodeSong, readSong, clearSongFromUrl, songUrl } from './song.js';
 import '../style.css';
 
 // Los modos: el color de la página y el de la tinta, y desde dónde mira la cámara (su
@@ -107,7 +109,8 @@ const engines = {
 };
 
 // Lo que hay guardado en este navegador (los sonidos, las secuencias y la pista
-// elegida). Puede no haber nada, o no poder leerse: entonces, lo de serie.
+// elegida). Puede no haber nada, o no poder leerse: entonces, lo de serie. Si se llega
+// con una canción en el enlace (?song=…), manda la del enlace.
 const STORE = 'iksynth:v1';
 let saved = null;
 try {
@@ -115,23 +118,25 @@ try {
 } catch {
   saved = null;
 }
+const shared = await readSong();
+if (shared) saved = { ...shared, track: saved?.track };
 for (const t of TRACKS) if (saved?.[t]) engines[t].load(saved[t]);
+
+// El enlace para compartir, siempre al día (share.js).
+let shareCode = '';
+const song = () => ({ synth: engines.synth.params, acid: engines.acid.params, drums: engines.drums.params, seq: seq.state });
+const refreshShare = () => encodeSong(song()).then((code) => (shareCode = code)).catch(() => {});
 
 let saveTimer = 0;
 function save() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     try {
-      localStorage.setItem(STORE, JSON.stringify({
-        synth: engines.synth.params,
-        acid: engines.acid.params,
-        drums: engines.drums.params,
-        seq: seq.state,
-        track,
-      }));
+      localStorage.setItem(STORE, JSON.stringify({ ...song(), track }));
     } catch {
       /* sin sitio o sin permiso: no se guarda, sin más */
     }
+    refreshShare();
   }, 400);
 }
 
@@ -254,8 +259,13 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// Compartir: una foto, con el marco del color de la página.
-setupShare(canvas, () => renderer.render(scene, camera), () => ({ background: LOOKS[mode].page, ink: LOOKS[mode].ink }));
+// Compartir: un enlace con la canción. La que llegó por enlace ya es de aquí: se guarda y
+// la dirección se queda limpia.
+setupShare(() => (shareCode ? songUrl(shareCode) : null));
+if (shared) {
+  clearSongFromUrl();
+  save();
+} else refreshShare();
 
 // El cursor, de −1 a 1 en cada eje, para el parallax; se queda donde lo dejes.
 const pointer = { x: 0, y: 0 };

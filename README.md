@@ -15,6 +15,7 @@ Un sintetizador en el navegador, con un bajo ácido, una caja de ritmos y un sec
 - En la rejilla: tocar un paso de notas lo marca; accent y slide se encienden y apagan tocándolos. En la caja, cada toque sube la intensidad del paso (baja, media, alta y, otra vez, apagado), y se ve en lo relleno que está; lo grabado tocando entra en media. **del** (o retroceso) borra el paso marcado; **clear**, dos veces, la pista entera.
 - Espacio, play y stop. Tempo (de 40 a 240 bpm; con mayúsculas, de diez en diez) y swing.
 - Los sonidos, las secuencias y la pista elegida se guardan en el navegador.
+- **Compartir** (arriba a la derecha) no comparte una foto: comparte la canción. Hace un enlace con todo (las tres secuencias, el tempo, el swing, el sonido de las tres pistas y el modo) comprimido en la dirección (`?song=…`); abre el menú de compartir del sistema o, donde no lo hay, copia el enlace. Quien lo abre recibe la canción cargada, lista para darle a play.
 
 ### Lo demás
 
@@ -36,7 +37,7 @@ Un sintetizador en el navegador, con un bajo ácido, una caja de ritmos y un sec
 | `src/visual.js` | Lo que se ve: la cordillera, la esfera y su malla. |
 | `src/panel.js` | El panel con el sonido de cada pista. |
 | `src/keys.js` | Tocar: el teclado del ordenador y el de la pantalla. Un teclado MIDI solo tendría que llamar a `noteOn` y `noteOff`. |
-| `src/share.js` | Compartir una foto. |
+| `src/song.js` · `src/share.js` | La canción en la URL (empaquetada y comprimida) y compartirla con un enlace. |
 
 ```sh
 npm install
