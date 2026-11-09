@@ -1188,8 +1188,8 @@ html[data-mode='unit'] .synth__random {
   html[data-mode='unit'] .synth.is-open .synth__body:not([hidden]) {
     display: grid;
     grid-template-columns: repeat(12, minmax(0, 1fr));
-    align-content: space-evenly;
-    gap: 18px 26px;
+    align-content: center;
+    gap: 26px 26px;
   }
 
   html[data-mode='unit'] .synth__body[data-kind='synth'] {
