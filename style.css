@@ -684,11 +684,43 @@ body {
   min-width: 4.2em;
 }
 
-/* Grabando: el rec, en rojo de piloto (en todos los modos). */
-.seq__rec.is-on {
+/* El rec, con su bolita roja delante. Grabando: el botón, rojo de piloto (en todos los
+   modos), y la bolita, blanca y parpadeando. */
+.seq__rec {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.seq__rec::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e5484d;
+}
+
+.seq .seq__rec.is-on {
   background: #e5484d;
   border-color: #e5484d;
   color: #fff;
+}
+
+.seq__rec.is-on::before {
+  background: #fff;
+  animation: rec-blink 1s steps(1) infinite;
+}
+
+@keyframes rec-blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seq__rec.is-on::before {
+    animation: none;
+  }
 }
 
 .seq__bpm,
