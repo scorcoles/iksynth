@@ -4,20 +4,20 @@ Un sintetizador en el navegador, con un bajo ácido, una caja de ritmos y un sec
 
 Demo: [scorcoles.github.io/iksynth](https://scorcoles.github.io/iksynth/) · En la web: [vertik.net/iksynth](https://www.vertik.net/iksynth/)
 
-### Las tres pistas
+### Las pistas
 
-- **synth**: hasta 12 notas a la vez. Cada voz: un oscilador (sin, tri, saw, sqr; con varias voces desafinadas entre sí, *unison*), su envolvente de volumen y un filtro de paso bajo de 24 dB con su propia envolvente. Un LFO (al filtro, al tono o al volumen) y efectos: drive, chorus, delay y reverb. Seis presets (init, pad, bass, pluck, lead, drone).
+- **synth**: hasta 12 notas a la vez. Se pueden añadir más pistas de synth (hasta cuatro: un colchón, un lead…) con **+** junto a las pestañas, cada una con su sonido, su panel y su secuencia; las añadidas se quitan con su **×** (dos toques). Cada voz: un oscilador (sin, tri, saw, sqr; con varias voces desafinadas entre sí, *unison*), su envolvente de volumen y un filtro de paso bajo de 24 dB con su propia envolvente. Un LFO (al filtro, al tono o al volumen) y efectos: drive, chorus, delay y reverb. Seis presets (init, pad, bass, pluck, lead, drone).
 - **acid**: un bajo monofónico para líneas ácidas: diente de sierra o cuadrada por un filtro muy resonante con una envolvente corta. En cada paso, **accent** (más fuerte, y el filtro se abre más y se cierra antes) y **slide** (no se suelta: se desliza hasta la nota siguiente). Drive y delay. Presets classic, squelch y deep.
 - **drums**: una caja de ritmos sintetizada, sin muestras: kick, snare, clap, hat, open (el hat cerrado lo corta), tom y cow. Cada uno con su volumen, su afinación y su largo.
 
 ### Tocar y grabar
 
-- Se toca la pista elegida (1, 2 y 3, o sus pestañas) con el teclado del ordenador: la fila de la A son las teclas blancas (A = do, hasta la Ñ) y la de encima, las negras (W, E, T, Y, U, O, P); Z y X bajan y suben una octava. O con el teclado de la pantalla (arrastrando se pasa de una tecla a otra). Con la caja, cada tecla blanca es un instrumento (A = kick, S = snare…), y su nombre se ve en la tecla.
+- Se toca la pista elegida (1, 2, 3…, en el orden de sus pestañas) con el teclado del ordenador: la fila de la A son las teclas blancas (A = do, hasta la Ñ) y la de encima, las negras (W, E, T, Y, U, O, P); Z y X bajan y suben una octava. O con el teclado de la pantalla (arrastrando se pasa de una tecla a otra). Con la caja, cada tecla blanca es un instrumento (A = kick, S = snare…), y su nombre se ve en la tecla.
 - **rec** en marcha: lo que se toca se cuadra al paso más cercano (en el synth, con su largo al soltar). **rec** parado: paso a paso; cada nota o acorde va al paso marcado y, al soltar, pasa al siguiente.
 - En la rejilla: tocar un paso de notas lo marca; accent y slide se encienden y apagan tocándolos. En la caja, cada toque sube la intensidad del paso (baja, media, alta y, otra vez, apagado), y se ve en lo relleno que está; lo grabado tocando entra en media. Con el botón derecho, la vía rápida: se borra lo que haya en ese paso (en la fila de notas, el paso entero; en accent o slide, se apaga; en la caja, solo ese golpe). **del** (o retroceso) borra el paso marcado; **clear**, dos veces, la pista entera.
 - Espacio, play y stop. Tempo (de 40 a 240 bpm; con mayúsculas, de diez en diez) y swing.
 - Los sonidos, las secuencias y la pista elegida se guardan en el navegador.
-- **Compartir** (arriba a la derecha) no comparte una foto: comparte la canción. Hace un enlace con todo (las tres secuencias, el tempo, el swing, el sonido de las tres pistas y el modo) comprimido en la dirección (`?song=…`); abre el menú de compartir del sistema o, donde no lo hay, copia el enlace. Quien lo abre recibe la canción cargada, lista para darle a play.
+- **Compartir** (arriba a la derecha) no comparte una foto: comparte la canción. Hace un enlace con todo (las secuencias, el tempo, el swing, el sonido de todas las pistas y el modo) comprimido en la dirección (`?song=…`); abre el menú de compartir del sistema o, donde no lo hay, copia el enlace. Quien lo abre recibe la canción cargada, lista para darle a play.
 
 ### Lo demás
 

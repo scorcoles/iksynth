@@ -2,10 +2,10 @@
 // La canción en la URL: para compartirla con un enlace
 // =========================================================================================
 //
-// Todo lo que hace falta para que suene igual en otro navegador: las tres secuencias, el
-// tempo, el swing y el sonido de las tres pistas. Se empaqueta en poco (números
-// redondeados, la caja como cifras seguidas), se comprime y va en la dirección como
-// «?song=…». Quien abre el enlace la recibe cargada.
+// Todo lo que hace falta para que suene igual en otro navegador: las secuencias, el
+// tempo, el swing y el sonido de todas las pistas (las de synth, el acid y la caja). Se
+// empaqueta en poco (números redondeados, la caja como cifras seguidas), se comprime y va
+// en la dirección como «?song=…». Quien abre el enlace la recibe cargada.
 //
 // El código empieza por una letra: «z», comprimido (deflate); «j», sin comprimir (para
 // navegadores sin CompressionStream).
@@ -16,16 +16,20 @@ const PARAM = 'song';
 const round = (params) =>
   Object.fromEntries(Object.entries(params).map(([k, v]) => [k, typeof v === 'number' ? Number(v.toPrecision(4)) : v]));
 
-function pack({ synth, acid, drums, seq }) {
+// Versión 2: varias pistas de synth. La 1 (una sola) se sigue leyendo.
+const packSteps = (steps) => steps.map((notes) => notes.map((n) => [n.midi, n.len]));
+const unpackSteps = (steps) => (Array.isArray(steps) ? steps.map((notes) => (Array.isArray(notes) ? notes.map(([midi, len]) => ({ midi, len })) : [])) : null);
+
+function pack({ synths, acid, drums, seq }) {
   return {
-    v: 1,
-    synth: round(synth),
+    v: 2,
+    synths: synths.map(round),
     acid: round(acid),
     drums: round(drums),
     seq: {
       bpm: seq.bpm,
       swing: Number(seq.swing.toFixed(3)),
-      synth: seq.synth.map((notes) => notes.map((n) => [n.midi, n.len])),
+      synths: seq.synths.map(packSteps),
       acid: seq.acid.map((a) => (a ? [a.midi, (a.accent ? 1 : 0) | (a.slide ? 2 : 0)] : 0)),
       drums: seq.drums.map((row) => row.join('')),
     },
@@ -33,16 +37,17 @@ function pack({ synth, acid, drums, seq }) {
 }
 
 function unpack(p) {
-  if (p?.v !== 1 || !p.seq) return null;
+  if ((p?.v !== 1 && p?.v !== 2) || !p.seq) return null;
   const s = p.seq;
+  const v1 = p.v === 1;
   return {
-    synth: p.synth,
+    synths: v1 ? [p.synth] : Array.isArray(p.synths) ? p.synths : [],
     acid: p.acid,
     drums: p.drums,
     seq: {
       bpm: s.bpm,
       swing: s.swing,
-      synth: Array.isArray(s.synth) ? s.synth.map((notes) => (Array.isArray(notes) ? notes.map(([midi, len]) => ({ midi, len })) : [])) : null,
+      synths: (v1 ? [s.synth] : Array.isArray(s.synths) ? s.synths : []).map(unpackSteps),
       acid: Array.isArray(s.acid) ? s.acid.map((a) => (Array.isArray(a) ? { midi: a[0], accent: !!(a[1] & 1), slide: !!(a[1] & 2) } : null)) : null,
       drums: Array.isArray(s.drums) ? s.drums.map((row) => String(row).split('').map(Number)) : null,
     },

@@ -255,6 +255,13 @@ export function createSynth(output) {
       voices.releaseAll();
     },
 
+    // Al quitar su pista: se calla y se deshace (todos sus nodos).
+    dispose() {
+      clearTimeout(apply.reverbTimer);
+      voices.releaseAll();
+      for (const node of [voices, vibrato, autoFilter, tremolo, drive, driveTrim, chorus, delay, reverb, volume]) node.dispose();
+    },
+
     // Desde el secuenciador: una nota que empieza en «time» y dura «duration» segundos.
     play(midi, duration, time, velocity = 0.8) {
       voices.triggerAttackRelease(hz(midi), duration, time, velocity);

@@ -2,8 +2,9 @@
 // iksynth: un sintetizador en el navegador, con su sonido dibujado en tiempo real
 // =========================================================================================
 //
-// Un experimento de VERTIK. Tres pistas: «synth» (el sinte), «acid» (un bajo ácido, con
-// accent y slide) y «drums» (una caja de ritmos), cada una con su secuencia de 16 pasos.
+// Un experimento de VERTIK. Pistas: «synth» (el sinte; hasta cuatro, con «+»), «acid» (un
+// bajo ácido, con accent y slide) y «drums» (una caja de ritmos), cada una con su
+// secuencia de 16 pasos.
 // Se toca la pista elegida con el teclado del ordenador o con el de la pantalla, y lo que
 // se toca se puede grabar en su secuencia; el panel de la derecha cambia su sonido. Todo
 // lo que suena se dibuja mientras suena.
@@ -30,7 +31,7 @@ import { createBus } from './audio.js';
 import { createSynth } from './synth.js';
 import { createAcid } from './acid.js';
 import { createDrums, VOICES } from './drums.js';
-import { createSequencer, TRACKS } from './sequencer.js';
+import { createSequencer, synthTrack, synthIndex, kindOf } from './sequencer.js';
 import { createSeqView } from './seqview.js';
 import { createVisual, toBands, BANDS } from './visual.js';
 import { createPanel } from './panel.js';
@@ -98,10 +99,10 @@ const fromHash = () => setMode(decodeURIComponent(location.hash.slice(1)));
 window.addEventListener('hashchange', fromHash);
 fromHash();
 
-// El sonido: el bus y las tres pistas.
+// El sonido: el bus y las pistas (los sintes se crean más abajo, uno por pista de synth).
 const bus = createBus();
 const engines = {
-  synth: createSynth(bus.input),
+  synths: [],
   acid: createAcid(bus.input),
   drums: createDrums(bus.input),
 };
@@ -118,11 +119,19 @@ try {
 }
 const shared = await readSong();
 if (shared) saved = { ...shared, track: saved?.track };
-for (const t of TRACKS) if (saved?.[t]) engines[t].load(saved[t]);
+if (saved?.acid) engines.acid.load(saved.acid);
+if (saved?.drums) engines.drums.load(saved.drums);
+// El sonido de cada pista de synth (lo guardado antes de que hubiera varias: «synth»).
+const savedSynths = Array.isArray(saved?.synths) ? saved.synths : saved?.synth ? [saved.synth] : [];
 
 // El enlace para compartir, siempre al día (share.js).
 let shareCode = '';
-const song = () => ({ synth: engines.synth.params, acid: engines.acid.params, drums: engines.drums.params, seq: seq.state });
+const song = () => ({
+  synths: engines.synths.map((e) => e.params),
+  acid: engines.acid.params,
+  drums: engines.drums.params,
+  seq: seq.state,
+});
 const refreshShare = () => encodeSong(song()).then((code) => (shareCode = code)).catch(() => {});
 
 let saveTimer = 0;
@@ -169,8 +178,13 @@ const hitNow = () => {
   kicked = true;
 };
 
-// El secuenciador y su vista.
-let track = TRACKS.includes(saved?.track) ? saved.track : 'synth';
+// El panel: el sonido de la pista elegida.
+const panel = createPanel(document.querySelector('[data-panel]'), save);
+panel.add('acid', 'acid', engines.acid);
+panel.add('drums', 'drums', engines.drums);
+
+// El secuenciador.
+let track = 'synth:0';
 const seq = createSequencer(engines, {
   onChange() {
     view?.render();
@@ -184,16 +198,54 @@ const seq = createSequencer(engines, {
   },
 });
 seq.load(saved?.seq);
+
+// Las pistas de synth: un sinte y un cuerpo del panel por cada una.
+function makeSynth(i, params) {
+  const engine = createSynth(bus.input);
+  if (params) engine.load(params);
+  engines.synths[i] = engine;
+  panel.add(synthTrack(i), 'synth', engine);
+}
+seq.state.synths.forEach((_, i) => makeSynth(i, savedSynths[i]));
+
+// Las pistas, en orden (para las pestañas y las teclas 1, 2, 3…), con su nombre.
+const synthName = (i) => (i === 0 ? 'synth' : `synth ${i + 1}`);
+const trackList = () => [
+  ...engines.synths.map((_, i) => ({ id: synthTrack(i), name: synthName(i) })),
+  { id: 'acid', name: 'acid' },
+  { id: 'drums', name: 'drums' },
+];
+const nameOf = (t) => trackList().find((x) => x.id === t)?.name ?? t;
+
+// Lo que suena al tocar en directo, de la pista elegida.
+const liveEngine = (t) => (kindOf(t) === 'synth' ? engines.synths[synthIndex(t)] : engines[t]);
+
 const view = createSeqView(document.querySelector('[data-seq]'), seq, {
   play() {
     wake();
     seq.toggle();
   },
   setTrack,
+  tracks: trackList,
+  addSynth() {
+    if (!seq.addSynth()) return;
+    const i = seq.state.synths.length - 1;
+    makeSynth(i, null);
+    setTrack(synthTrack(i));
+  },
+  removeSynth(t) {
+    const i = synthIndex(t);
+    if (i < 1 || !engines.synths[i]) return;
+    keys.releaseAll();
+    engines.synths[i].dispose();
+    engines.synths.splice(i, 1);
+    panel.remove(t);
+    // Las de detrás suben un puesto: sus cuerpos del panel, con ellas.
+    for (let k = i; k < engines.synths.length; k++) panel.rename(synthTrack(k + 1), synthTrack(k));
+    seq.removeSynth(i);
+    setTrack(synthTrack(Math.min(i, engines.synths.length - 1)));
+  },
 });
-
-// El panel: el sonido de la pista elegida.
-const panel = createPanel(document.querySelector('[data-panel]'), engines, save);
 
 // Tocar: la pista elegida. Con la caja, cada tecla blanca es un instrumento.
 const WHITE_OFFSETS = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16];
@@ -211,7 +263,7 @@ const keys = setupKeys(document.querySelector('[data-keys]'), {
       engines.drums.trigger(v);
       seq.noteOn('drums', v);
     } else {
-      engines[track].noteOn(midi);
+      liveEngine(track)?.noteOn(midi);
       seq.noteOn(track, midi);
     }
   },
@@ -220,27 +272,30 @@ const keys = setupKeys(document.querySelector('[data-keys]'), {
       const v = voiceOf(midi);
       if (v != null) seq.noteOff('drums', v);
     } else {
-      engines[track].noteOff(midi);
+      liveEngine(track)?.noteOff(midi);
       seq.noteOff(track, midi);
     }
   },
   releaseAll() {
-    engines.synth.releaseAll();
+    engines.synths.forEach((e) => e.releaseAll());
     engines.acid.releaseAll();
   },
 });
 
 function setTrack(t) {
+  if (!trackList().some((x) => x.id === t)) t = synthTrack(0);
   keys.releaseAll();
   track = t;
-  panel.show(t);
+  panel.show(t, nameOf(t));
   keys.setNames(t === 'drums' ? VOICES : null);
   view.setTrack(t);
   save();
 }
-setTrack(track);
+// La pista guardada («synth», de antes de que hubiera varias, es la primera).
+setTrack(saved?.track === 'synth' ? synthTrack(0) : saved?.track ?? synthTrack(0));
 
-// Atajos: espacio, play/stop; 1, 2 y 3, las pistas; retroceso, borrar el paso marcado.
+// Atajos: espacio, play/stop; 1, 2, 3…, las pistas (en el orden de sus pestañas);
+// retroceso, borrar el paso marcado.
 window.addEventListener('keydown', (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.target.closest?.('input[type="number"], textarea')) return;
@@ -249,8 +304,9 @@ window.addEventListener('keydown', (e) => {
     if (e.repeat) return;
     wake();
     seq.toggle();
-  } else if (['Digit1', 'Digit2', 'Digit3'].includes(e.code)) {
-    setTrack(TRACKS[Number(e.code.slice(5)) - 1]);
+  } else if (/^Digit[1-9]$/.test(e.code)) {
+    const t = trackList()[Number(e.code.slice(5)) - 1];
+    if (t) setTrack(t.id);
   } else if (e.code === 'Backspace' || e.code === 'Delete') {
     e.preventDefault();
     seq.clearStep(track);

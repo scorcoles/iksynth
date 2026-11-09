@@ -2,10 +2,10 @@
 // El secuenciador: 16 pasos por pista, el transporte y la grabación
 // =========================================================================================
 //
-// Tres pistas, cada una con su secuencia de 16 pasos (semicorcheas: un compás de 4/4):
+// Cada pista, con su secuencia de 16 pasos (semicorcheas: un compás de 4/4):
 //
-//   synth → en cada paso, las notas que empiezan ahí y cuántos pasos duran (acordes, notas
-//           largas);
+//   synth → de una a cuatro pistas (un colchón, un lead…), cada una con su sinte: en cada
+//           paso, las notas que empiezan ahí y cuántos pasos duran (acordes, notas largas);
 //   acid  → en cada paso, una nota o nada, y si lleva accent y slide;
 //   drums → siete filas (un instrumento cada una) de 16 pasos, cada uno apagado (0) o con
 //           su intensidad: baja (1), media (2) o alta (3).
@@ -23,20 +23,26 @@ import * as Tone from 'tone';
 import { VOICES } from './drums.js';
 
 export const STEPS = 16;
-export const TRACKS = ['synth', 'acid', 'drums'];
+export const MAX_SYNTHS = 4;
+
+// Las pistas se nombran «synth:0», «synth:1»… (por su sitio), «acid» y «drums».
+export const synthTrack = (i) => `synth:${i}`;
+export const synthIndex = (track) => (String(track).startsWith('synth') ? Number(String(track).split(':')[1] || 0) : -1);
+export const kindOf = (track) => (synthIndex(track) >= 0 ? 'synth' : track);
 // La fuerza de cada intensidad de la caja (la 0 no suena), y la de lo que se graba tocando.
 export const LEVELS = [0, 0.35, 0.65, 1];
 const RECORD_LEVEL = 2;
 
+const emptySynth = () => Array.from({ length: STEPS }, () => []);
 const emptyState = () => ({
   bpm: 120,
   swing: 0,
-  synth: Array.from({ length: STEPS }, () => []),
+  synths: [emptySynth()],
   acid: Array.from({ length: STEPS }, () => null),
   drums: VOICES.map(() => Array(STEPS).fill(0)),
 });
 
-// engines: { synth, acid, drums }. onChange: algo cambió en las secuencias (para pintar y
+// engines: { synths: [un sinte por pista], acid, drums }. onChange: algo cambió en las secuencias (para pintar y
 // guardar). onStep(step): suena el paso «step» (−1: parado). onBeat(track): suena algo de
 // una pista (para los dibujos).
 export function createSequencer(engines, { onChange, onStep, onBeat }) {
@@ -71,14 +77,17 @@ export function createSequencer(engines, { onChange, onStep, onBeat }) {
     const dur = stepSeconds();
     const beats = new Set();
 
-    // synth: cada nota con su largo (un pelo menos, para que se note el corte).
-    {
-      for (const { midi, len } of state.synth[step]) {
-        if (skip('synth', midi)) continue;
-        engines.synth.play(midi, len * dur * 0.92, time);
+    // synth: en cada pista, cada nota con su largo (un pelo menos, para que se note el
+    // corte).
+    state.synths.forEach((steps, i) => {
+      const engine = engines.synths[i];
+      if (!engine) return;
+      for (const { midi, len } of steps[step]) {
+        if (skip(synthTrack(i), midi)) continue;
+        engine.play(midi, len * dur * 0.92, time);
         beats.add('synth');
       }
-    }
+    });
 
     // acid: si el paso anterior tenía slide y nota, este llega deslizándose (si tiene nota).
     const prev = state.acid[(step + STEPS - 1) % STEPS];
@@ -132,20 +141,21 @@ export function createSequencer(engines, { onChange, onStep, onBeat }) {
 
   function noteOn(track, value) {
     if (!recording) return;
+    const steps = state.synths[synthIndex(track)];
     if (playing) {
       const { step, pos } = quantize(track, value);
-      if (track === 'synth') {
-        state.synth[step] = state.synth[step].filter((n) => n.midi !== value);
-        state.synth[step].push({ midi: value, len: 1 });
-        liveStarts.set(value, { step, pos });
+      if (steps) {
+        steps[step] = steps[step].filter((n) => n.midi !== value);
+        steps[step].push({ midi: value, len: 1 });
+        liveStarts.set(`${track}|${value}`, { step, pos });
       } else if (track === 'acid') {
         state.acid[step] = { midi: value, accent: state.acid[step]?.accent || false, slide: state.acid[step]?.slide || false };
       } else state.drums[value][step] ||= RECORD_LEVEL;
     } else {
       stepHeld.add(`${track}:${value}`);
       stepWrote = true;
-      if (track === 'synth') {
-        if (!state.synth[cursor].some((n) => n.midi === value)) state.synth[cursor].push({ midi: value, len: 1 });
+      if (steps) {
+        if (!steps[cursor].some((n) => n.midi === value)) steps[cursor].push({ midi: value, len: 1 });
       } else if (track === 'acid') {
         state.acid[cursor] = { midi: value, accent: state.acid[cursor]?.accent || false, slide: state.acid[cursor]?.slide || false };
       } else state.drums[value][cursor] ||= RECORD_LEVEL;
@@ -156,11 +166,13 @@ export function createSequencer(engines, { onChange, onStep, onBeat }) {
   function noteOff(track, value) {
     if (!recording) return;
     if (playing) {
-      if (track !== 'synth' || !liveStarts.has(value)) return;
-      const { step, pos } = liveStarts.get(value);
-      liveStarts.delete(value);
+      const key = `${track}|${value}`;
+      const steps = state.synths[synthIndex(track)];
+      if (!steps || !liveStarts.has(key)) return;
+      const { step, pos } = liveStarts.get(key);
+      liveStarts.delete(key);
       const len = Math.max(1, Math.min(STEPS, Math.round(position() - pos)));
-      const note = state.synth[step].find((n) => n.midi === value);
+      const note = steps[step].find((n) => n.midi === value);
       if (note) note.len = len;
       onChange();
     } else {
@@ -248,13 +260,31 @@ export function createSequencer(engines, { onChange, onStep, onBeat }) {
       onChange();
     },
     clearStep(track, step = cursor) {
-      if (track === 'synth') state.synth[step] = [];
+      const steps = state.synths[synthIndex(track)];
+      if (steps) steps[step] = [];
       else if (track === 'acid') state.acid[step] = null;
       else state.drums.forEach((row) => (row[step] = 0));
       onChange();
     },
     clearTrack(track) {
-      state[track] = emptyState()[track];
+      const i = synthIndex(track);
+      if (i >= 0) state.synths[i] = emptySynth();
+      else state[track] = emptyState()[track];
+      onChange();
+    },
+
+    // Pistas de synth: añadir una (vacía, al final) o quitar la de la posición «i» (la
+    // primera no se quita). main.js crea y quita su sinte.
+    addSynth() {
+      if (state.synths.length >= MAX_SYNTHS) return false;
+      state.synths.push(emptySynth());
+      onChange();
+      return true;
+    },
+    removeSynth(i) {
+      if (i < 1 || i >= state.synths.length) return;
+      state.synths.splice(i, 1);
+      liveStarts.clear();
       onChange();
     },
 
@@ -266,13 +296,17 @@ export function createSequencer(engines, { onChange, onStep, onBeat }) {
       state = {
         bpm: Number(saved.bpm) || base.bpm,
         swing: Number(saved.swing) || 0,
-        synth: ok(saved.synth, STEPS) ? saved.synth.map((s) => (Array.isArray(s) ? s.filter((n) => Number.isFinite(n?.midi)) : [])) : base.synth,
+        // Lo guardado antes de las pistas de synth (una sola, «synth») entra como la primera.
+        synths: (Array.isArray(saved.synths) ? saved.synths : [saved.synth])
+          .slice(0, MAX_SYNTHS)
+          .map((steps) => (ok(steps, STEPS) ? steps.map((s) => (Array.isArray(s) ? s.filter((n) => Number.isFinite(n?.midi)).map((n) => ({ midi: n.midi, len: Math.max(1, Math.min(STEPS, Number(n.len) || 1)) })) : [])) : emptySynth())),
         acid: ok(saved.acid, STEPS) ? saved.acid.map((s) => (s && Number.isFinite(s.midi) ? { midi: s.midi, accent: !!s.accent, slide: !!s.slide } : null)) : base.acid,
         // Lo guardado antes de las intensidades (encendido o no) entra en media.
         drums: ok(saved.drums, VOICES.length)
           ? saved.drums.map((r) => (ok(r, STEPS) ? r.map((v) => (v === true ? RECORD_LEVEL : Math.max(0, Math.min(3, Math.round(Number(v) || 0))))) : Array(STEPS).fill(0)))
           : base.drums,
       };
+      if (!state.synths.length) state.synths.push(emptySynth());
       transport.bpm.value = state.bpm;
       transport.swing = state.swing * 0.6;
     },

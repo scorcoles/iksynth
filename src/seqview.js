@@ -2,8 +2,9 @@
 // Lo que se ve del secuenciador: el transporte, las pistas y la rejilla de 16 pasos
 // =========================================================================================
 //
-// Arriba, una barra: play, rec, el tempo, el swing, las tres pistas (1, 2, 3) y borrar
-// (el paso marcado o la pista entera). Debajo, la rejilla de la pista elegida:
+// Arriba, una barra: play, rec, el tempo, el swing, las pistas (1, 2, 3…; «+» añade una
+// de synth, y las añadidas llevan «×» para quitarlas) y borrar (el paso marcado o la pista
+// entera). Debajo, la rejilla de la pista elegida:
 //
 //   synth → una fila: las notas de cada paso (las largas tiñen los pasos que ocupan);
 //   acid  → tres filas: la nota, el accent y el slide;
@@ -13,10 +14,9 @@
 // slide lo enciende o lo apaga; tocar un paso de la caja le sube la intensidad (baja,
 // media, alta y, otra vez, apagado). Con el botón derecho, la vía rápida: se borra lo que
 // haya en ese paso de esa fila (en la de notas, el paso entero; en la caja, solo ese
-// golpe). Cada cuatro pasos, un poco de aire:
-// los tiempos del compás.
+// golpe). Cada cuatro pasos, un poco de aire: los tiempos del compás.
 
-import { STEPS, TRACKS } from './sequencer.js';
+import { STEPS, MAX_SYNTHS, synthIndex, kindOf } from './sequencer.js';
 
 const LEVEL_NAMES = ['', 'baja', 'media', 'alta'];
 import { VOICES } from './drums.js';
@@ -35,7 +35,8 @@ const button = (cls, text, label) => {
   return b;
 };
 
-// root: donde va. seq: el secuenciador. actions: { play(), setTrack(track) }.
+// root: donde va. seq: el secuenciador. actions: { play(), setTrack(track), tracks() (las
+// pistas, en orden: [{ id, name }]), addSynth(), removeSynth(track) }.
 export function createSeqView(root, seq, actions) {
   // ---- La barra ----
   const bar = el('div', 'seq__bar');
@@ -68,13 +69,44 @@ export function createSeqView(root, seq, actions) {
 
   const tabs = el('div', 'seq__tabs');
   tabs.setAttribute('role', 'tablist');
-  const tabEls = TRACKS.map((t, i) => {
-    const b = button(null, `${i + 1} ${t}`);
-    b.setAttribute('role', 'tab');
-    b.addEventListener('click', () => actions.setTrack(t));
-    tabs.append(b);
-    return b;
-  });
+  // Quitar una pista de synth: dos toques en su «×» (el primero pregunta).
+  let removeArmed = { track: null, at: 0 };
+  function renderTabs() {
+    tabs.textContent = '';
+    const list = actions.tracks();
+    list.forEach(({ id, name }, i) => {
+      const wrap = el('span', 'seq__tab');
+      const b = button(null, `${i + 1} ${name}`);
+      b.setAttribute('role', 'tab');
+      const on = id === track;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-selected', String(on));
+      b.addEventListener('click', () => actions.setTrack(id));
+      wrap.append(b);
+      if (synthIndex(id) > 0) {
+        const armed = removeArmed.track === id && performance.now() - removeArmed.at < 2500;
+        const x = button('seq__close', armed ? 'sure?' : '×', `Quitar la pista ${name}`);
+        x.addEventListener('click', () => {
+          if (removeArmed.track === id && performance.now() - removeArmed.at < 2500) {
+            removeArmed = { track: null, at: 0 };
+            actions.removeSynth(id);
+          } else {
+            removeArmed = { track: id, at: performance.now() };
+            renderTabs();
+            setTimeout(renderTabs, 2600);
+          }
+        });
+        wrap.append(x);
+      }
+      tabs.append(wrap);
+      // El «+», detrás de la última pista de synth.
+      if (kindOf(id) === 'synth' && kindOf(list[i + 1]?.id) !== 'synth' && seq.state.synths.length < MAX_SYNTHS) {
+        const add = button('seq__add', '+', 'Añadir una pista de synth');
+        add.addEventListener('click', () => actions.addSynth());
+        tabs.append(add);
+      }
+    });
+  }
 
   const edit = el('div', 'seq__edit');
   const del = button(null, 'del', 'Borrar el paso marcado (retroceso)');
@@ -101,7 +133,7 @@ export function createSeqView(root, seq, actions) {
   const grid = el('div', 'seq__grid');
   root.append(bar, grid);
 
-  let track = 'synth';
+  let track = 'synth:0';
   let playing = -1;
 
   // Una fila: su nombre y 16 celdas. cell(step) → { text, on, tied, onClick }.
@@ -137,22 +169,19 @@ export function createSeqView(root, seq, actions) {
     if (document.activeElement !== bpmIn) bpmIn.value = st.bpm;
     swingIn.value = Math.round(st.swing * 100);
     swingOut.textContent = `${Math.round(st.swing * 100)}%`;
-    tabEls.forEach((b, i) => {
-      const on = TRACKS[i] === track;
-      b.classList.toggle('is-on', on);
-      b.setAttribute('aria-selected', String(on));
-    });
-    grid.dataset.track = track;
+    renderTabs();
+    grid.dataset.track = kindOf(track);
 
     grid.textContent = '';
-    if (track === 'synth') {
+    const synthSteps = st.synths[synthIndex(track)];
+    if (synthSteps) {
       // Qué pasos ocupan las notas largas que empiezan antes.
       const tied = Array(STEPS).fill(false);
-      st.synth.forEach((notes, s) => notes.forEach((n) => {
+      synthSteps.forEach((notes, s) => notes.forEach((n) => {
         for (let k = 1; k < n.len; k++) tied[(s + k) % STEPS] = true;
       }));
       row('notes', 'seq__row--notes', (s) => {
-        const notes = st.synth[s];
+        const notes = synthSteps[s];
         const names = notes.map((n) => noteName(n.midi));
         return {
           text: names.length > 2 ? `${names.slice(0, 2).join(' ')} +${names.length - 2}` : names.join(' '),
@@ -161,7 +190,7 @@ export function createSeqView(root, seq, actions) {
           cursor: seq.cursor === s,
           label: `Paso ${s + 1}${names.length ? `: ${names.join(', ')}` : ''}`,
           onClick: () => seq.setCursor(s),
-          onClear: () => seq.clearStep('synth', s),
+          onClear: () => seq.clearStep(track, s),
         };
       });
     } else if (track === 'acid') {

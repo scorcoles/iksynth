@@ -872,3 +872,19 @@ body {
 .toast[hidden] {
   display: none;
 }
+
+/* Las pestañas de las pistas: la «×» de las de synth añadidas, pegada a la suya, y el «+»
+   para añadir otra. */
+.seq__tab {
+  display: inline-flex;
+}
+
+.seq .seq__close {
+  margin-left: -1px;
+  padding: 3px 5px;
+}
+
+.seq .seq__add {
+  padding: 3px 8px;
+  border-style: dashed;
+}

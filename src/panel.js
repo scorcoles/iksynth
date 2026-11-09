@@ -257,22 +257,19 @@ function buildBody(spec, engine, onEdit) {
   return body;
 }
 
-// root: el <aside> del panel. engines: { synth, acid, drums }. onEdit: algo cambió.
-export function createPanel(root, engines, onEdit) {
+// root: el <aside> del panel. onEdit: algo cambió (para guardar). Cada pista añade su
+// cuerpo con add(track, kind, engine) y lo quita con remove(track); show(track, name)
+// enseña el suyo.
+export function createPanel(root, onEdit) {
   // La cabecera: el nombre de la pista y plegar/desplegar.
   const head = el('button', 'synth__head');
   head.type = 'button';
-  head.innerHTML = '<span data-panel-name>synth</span><span class="synth__fold" aria-hidden="true"></span>';
+  head.innerHTML = '<span data-panel-name></span><span class="synth__fold" aria-hidden="true"></span>';
   const nameEl = head.querySelector('[data-panel-name]');
   root.append(head);
 
-  const bodies = {};
-  for (const [track, spec] of Object.entries(PANELS)) {
-    bodies[track] = buildBody(spec, engines[track], onEdit);
-    bodies[track].id = `panel-${track}`;
-    bodies[track].hidden = true;
-    root.append(bodies[track]);
-  }
+  const bodies = new Map();
+  let serial = 0;
 
   const setOpen = (open) => {
     root.classList.toggle('is-open', open);
@@ -281,21 +278,40 @@ export function createPanel(root, engines, onEdit) {
   head.addEventListener('click', () => setOpen(!root.classList.contains('is-open')));
   setOpen(matchMedia('(min-width: 64rem) and (pointer: fine)').matches);
 
-  let current = 'synth';
-  const show = (track) => {
-    current = track;
-    for (const [t, body] of Object.entries(bodies)) body.hidden = t !== track;
-    nameEl.textContent = track;
-    head.setAttribute('aria-controls', bodies[track].id);
-  };
-  show('synth');
+  let current = null;
 
   // R: random en la pista elegida (si tiene presets).
   window.addEventListener('keydown', (e) => {
     if (e.code !== 'KeyR' || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.target.closest?.('input, textarea, select')) return;
-    bodies[current].randomize?.();
+    bodies.get(current)?.randomize?.();
   });
 
-  return { show };
+  return {
+    add(track, kind, engine) {
+      const body = buildBody(PANELS[kind], engine, onEdit);
+      body.id = `panel-${kind}-${serial++}`;
+      body.hidden = true;
+      root.append(body);
+      bodies.set(track, body);
+    },
+    remove(track) {
+      bodies.get(track)?.remove();
+      bodies.delete(track);
+    },
+    // Las pistas de synth se nombran por su sitio: al quitar una, las de detrás cambian
+    // de nombre; sus cuerpos, con ellas.
+    rename(from, to) {
+      const body = bodies.get(from);
+      if (!body) return;
+      bodies.delete(from);
+      bodies.set(to, body);
+    },
+    show(track, name) {
+      current = track;
+      for (const [t, body] of bodies) body.hidden = t !== track;
+      nameEl.textContent = name;
+      if (bodies.has(track)) head.setAttribute('aria-controls', bodies.get(track).id);
+    },
+  };
 }
