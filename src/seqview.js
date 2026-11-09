@@ -58,7 +58,10 @@ export function createSeqView(root, seq, actions) {
   bpmDown.addEventListener('click', (e) => seq.setBpm(seq.state.bpm - (e.shiftKey ? 10 : 1)));
   bpmUp.addEventListener('click', (e) => seq.setBpm(seq.state.bpm + (e.shiftKey ? 10 : 1)));
   bpmIn.addEventListener('change', () => seq.setBpm(Number(bpmIn.value) || seq.state.bpm));
-  bpmBox.append(bpmDown, bpmIn, el('span', 'seq__unit', 'bpm'), bpmUp);
+  // El número y la unidad, juntos dentro de la misma cajita; pulsar en «bpm» lleva al número.
+  const bpmField = el('label', 'seq__field');
+  bpmField.append(bpmIn, el('span', 'seq__unit', 'bpm'));
+  bpmBox.append(bpmDown, bpmField, bpmUp);
 
   const swingBox = el('label', 'seq__swing');
   const swingIn = el('input');
