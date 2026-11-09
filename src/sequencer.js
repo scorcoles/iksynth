@@ -232,6 +232,15 @@ export function createSequencer(engines, { onChange, onStep, onBeat }) {
       state.drums[voice][step] = (state.drums[voice][step] + 1) % LEVELS.length;
       onChange();
     },
+    // Clic derecho: apagar un golpe de la caja o el accent o el slide de un paso.
+    clearDrum(voice, step) {
+      state.drums[voice][step] = 0;
+      onChange();
+    },
+    clearAcidFlag(step, flag) {
+      if (state.acid[step]) state.acid[step][flag] = false;
+      onChange();
+    },
     toggleAcid(step, flag) {
       const s = state.acid[step];
       if (!s || s.midi == null) return;

@@ -11,7 +11,9 @@
 //
 // Tocar un paso de notas lo marca (ahí va lo que se grabe paso a paso); tocar accent o
 // slide lo enciende o lo apaga; tocar un paso de la caja le sube la intensidad (baja,
-// media, alta y, otra vez, apagado). Cada cuatro pasos, un poco de aire:
+// media, alta y, otra vez, apagado). Con el botón derecho, la vía rápida: se borra lo que
+// haya en ese paso de esa fila (en la de notas, el paso entero; en la caja, solo ese
+// golpe). Cada cuatro pasos, un poco de aire:
 // los tiempos del compás.
 
 import { STEPS, TRACKS } from './sequencer.js';
@@ -117,6 +119,10 @@ export function createSeqView(root, seq, actions) {
       b.classList.toggle('is-beat', s % 4 === 0);
       if (c.label) b.setAttribute('aria-label', c.label);
       b.addEventListener('click', c.onClick);
+      b.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        c.onClear?.();
+      });
       r.append(b);
     }
     grid.append(r);
@@ -155,6 +161,7 @@ export function createSeqView(root, seq, actions) {
           cursor: seq.cursor === s,
           label: `Paso ${s + 1}${names.length ? `: ${names.join(', ')}` : ''}`,
           onClick: () => seq.setCursor(s),
+          onClear: () => seq.clearStep('synth', s),
         };
       });
     } else if (track === 'acid') {
@@ -167,10 +174,11 @@ export function createSeqView(root, seq, actions) {
           cursor: seq.cursor === s,
           label: `Paso ${s + 1}${a ? `: ${noteName(a.midi)}` : ''}`,
           onClick: () => seq.setCursor(s),
+          onClear: () => seq.clearStep('acid', s),
         };
       });
-      row('accent', null, (s) => ({ on: st.acid[s]?.accent, label: `Accent en el paso ${s + 1}`, onClick: () => seq.toggleAcid(s, 'accent') }));
-      row('slide', null, (s) => ({ on: st.acid[s]?.slide, label: `Slide en el paso ${s + 1}`, onClick: () => seq.toggleAcid(s, 'slide') }));
+      row('accent', null, (s) => ({ on: st.acid[s]?.accent, label: `Accent en el paso ${s + 1}`, onClick: () => seq.toggleAcid(s, 'accent'), onClear: () => seq.clearAcidFlag(s, 'accent') }));
+      row('slide', null, (s) => ({ on: st.acid[s]?.slide, label: `Slide en el paso ${s + 1}`, onClick: () => seq.toggleAcid(s, 'slide'), onClear: () => seq.clearAcidFlag(s, 'slide') }));
     } else {
       VOICES.forEach((v, i) => {
         row(v, null, (s) => ({
@@ -182,6 +190,7 @@ export function createSeqView(root, seq, actions) {
             seq.toggleDrum(i, s);
             seq.setCursor(s);
           },
+          onClear: () => seq.clearDrum(i, s),
         }));
       });
     }
