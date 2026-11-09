@@ -2,6 +2,8 @@
 
 Un sintetizador en el navegador, con un bajo ácido, una caja de ritmos y un secuenciador de 16 pasos; todo lo que suena se dibuja mientras suena. Un experimento de [VERTIK](https://www.vertik.net).
 
+Demo: [scorcoles.github.io/iksynth](https://scorcoles.github.io/iksynth/) · En la web: [vertik.net/iksynth](https://www.vertik.net/iksynth/)
+
 ### Las tres pistas
 
 - **synth**: hasta 12 notas a la vez. Cada voz: un oscilador (sin, tri, saw, sqr; con varias voces desafinadas entre sí, *unison*), su envolvente de volumen y un filtro de paso bajo de 24 dB con su propia envolvente. Un LFO (al filtro, al tono o al volumen) y efectos: drive, chorus, delay y reverb. Seis presets (init, pad, bass, pluck, lead, drone).
