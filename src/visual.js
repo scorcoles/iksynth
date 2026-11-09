@@ -1,10 +1,13 @@
 // =========================================================================================
-// Lo que se ve: el sonido dibujado en una esfera, de dos maneras
+// Lo que se ve: el sonido dibujado en una esfera, de tres maneras
 // =========================================================================================
 //
 //   orb   → una esfera de puntos que respira con el sonido: los graves empujan el ecuador,
 //           los agudos los polos, y la onda la riza alrededor.
 //   wire  → la misma esfera, en malla gris sobre papel.
+//   unit  → la misma esfera, como en la pantallita de un aparato: paralelos de colores
+//           (azul, verde, blanco y naranja, como sus cuatro ruedas) y meridianos tenues,
+//           sobre negro.
 //
 // Todo se calcula en la CPU cada fotograma (son pocos miles de puntos) y se sube a la
 // tarjeta tal cual.
@@ -172,8 +175,49 @@ function createOrb() {
   const wire = new THREE.LineSegments(wireGeo, wireMat);
   wire.frustumCulled = false;
 
+  // El globo de unit: paralelos de colores y meridianos tenues, en tramos rectos.
+  const LAT = 15;
+  const LON = 16;
+  const RING = 120;
+  const MERID = 60;
+  const PALETTE = ['#3d7bff', '#22c25f', '#f0f0f0', '#ff5b1a'].map((c) => new THREE.Color(c));
+  const DIM = new THREE.Color('#3a3a3a');
+  const globeDirs = [];
+  const globeCols = [];
+  const push = (x, y, z, c) => {
+    globeDirs.push(x, y, z);
+    globeCols.push(c.r, c.g, c.b);
+  };
+  for (let k = 1; k < LAT; k++) {
+    const y = Math.cos((Math.PI * k) / LAT);
+    const r = Math.sqrt(1 - y * y);
+    const c = PALETTE[(k - 1) % PALETTE.length];
+    for (let i = 0; i < RING; i++) {
+      const a0 = (i / RING) * Math.PI * 2;
+      const a1 = ((i + 1) / RING) * Math.PI * 2;
+      push(Math.cos(a0) * r, y, Math.sin(a0) * r, c);
+      push(Math.cos(a1) * r, y, Math.sin(a1) * r, c);
+    }
+  }
+  for (let m = 0; m < LON; m++) {
+    const a = (m / LON) * Math.PI * 2;
+    for (let i = 0; i < MERID; i++) {
+      const t0 = (i / MERID) * Math.PI;
+      const t1 = ((i + 1) / MERID) * Math.PI;
+      push(Math.cos(a) * Math.sin(t0), Math.cos(t0), Math.sin(a) * Math.sin(t0), DIM);
+      push(Math.cos(a) * Math.sin(t1), Math.cos(t1), Math.sin(a) * Math.sin(t1), DIM);
+    }
+  }
+  const globeBase = new Float32Array(globeDirs);
+  const globePos = new Float32Array(globeBase.length);
+  const globeGeo = new THREE.BufferGeometry();
+  globeGeo.setAttribute('position', new THREE.BufferAttribute(globePos, 3).setUsage(THREE.DynamicDrawUsage));
+  globeGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(globeCols), 3));
+  const globe = new THREE.LineSegments(globeGeo, new THREE.LineBasicMaterial({ vertexColors: true }));
+  globe.frustumCulled = false;
+
   const group = new THREE.Group();
-  group.add(points, wire);
+  group.add(points, wire, globe);
 
   // El giro: lento siempre, y cada nota le da un empujón que se va frenando.
   let spin = 0;
@@ -206,11 +250,16 @@ function createOrb() {
       shape(wireDirs, wirePos, hit);
       wireGeo.attributes.position.needsUpdate = true;
     }
+    if (globe.visible) {
+      shape(globeBase, globePos, hit);
+      globeGeo.attributes.position.needsUpdate = true;
+    }
   }
 
   function setLook(look, ink, pixelRatio) {
     points.visible = look === 'orb';
     wire.visible = look === 'wire';
+    globe.visible = look === 'unit';
     pointMat.uniforms.uColor.value.set(ink);
     pointMat.uniforms.uSize.value = 2.2 * pixelRatio;
     wireMat.color.set(ink);

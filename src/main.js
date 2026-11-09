@@ -23,9 +23,11 @@
 //   share.js     → compartir la canción, con un enlace
 //   main.js      → el escenario, la cámara, los modos, las pistas y el bucle (este archivo)
 //
-// Dos modos, con «Prev» y «Next» en el pie, las flechas del teclado o la dirección
-// (#wire): «orb», una esfera de puntos que respira con el sonido, azul hielo sobre negro
-// azulado; y «wire», la misma esfera en malla gris sobre papel.
+// Tres modos, con «Prev» y «Next» en el pie, las flechas del teclado o la dirección
+// (#wire, #unit): «orb», una esfera de puntos que respira con el sonido, azul hielo sobre
+// negro azulado; «wire», la misma esfera en malla gris sobre papel; y «unit», todo como un
+// aparato de aluminio: la esfera en una pantallita negra, teclas de verdad y ruedas de
+// colores.
 
 import * as THREE from 'three';
 import { createBus } from './audio.js';
@@ -47,6 +49,8 @@ import '../style.css';
 const LOOKS = {
   orb: { page: '#070a12', ink: '#a9c9ff', eye: [0, 0, 4.8], target: [0, -0.22, 0], fog: [4.2, 6.2] },
   wire: { page: '#eeeeee', ink: '#333333', eye: [0, 0, 4.8], target: [0, -0.22, 0], fog: [4.2, 6.4] },
+  // En unit, «page» es el negro de su pantallita; el aluminio del aparato lo pone style.css.
+  unit: { page: '#0b0b0b', ink: '#f0f0f0', eye: [0, 0, 4.6], target: [0, 0, 0], fog: [4.0, 6.0] },
 };
 
 // Cuánto se mueve la cámara con el cursor (o con el dedo), como si se mirara de lado.

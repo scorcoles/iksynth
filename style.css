@@ -3,7 +3,8 @@
    panel del sinte, el teclado y el pie
    =========================================================================================
    Un juego de colores por modo (main.js pone data-mode en <html>): orb, azul hielo sobre
-   negro azulado; y wire, gris oscuro sobre papel. --page es
+   negro azulado; wire, gris oscuro sobre papel; y unit, un aparato de aluminio (al final
+   de este archivo). --page es
    el color de la página y --ink el de la letra; el pie y el panel son bloques del color de
    la letra, con la letra del color de la página. */
 
@@ -926,4 +927,397 @@ body {
 
 .seq__demo[hidden] {
   display: none;
+}
+
+/* =========================================================================================
+   unit: todo como un aparato. Cuerpo de aluminio, la esfera en una pantallita negra con
+   su bisel, el panel como un menú de esa pantalla, teclas de verdad que se hunden, una
+   pantallita naranja para el tempo y cuatro ruedas de colores (azul, verde, blanco y
+   naranja) que tiñen las pistas y los deslizadores.
+   ========================================================================================= */
+
+html[data-mode='unit'] {
+  --page: #d9d9d5;
+  --ink: #1b1b1b;
+  --blue: #3d7bff;
+  --green: #22c25f;
+  --white: #f0f0f0;
+  --orange: #ff5b1a;
+  --cap: #f1f1ed;
+  --cap-edge: #a9a9a3;
+  --screen: #0b0b0b;
+}
+
+html[data-mode='unit'] body {
+  background: linear-gradient(180deg, #e2e2de 0%, #d3d3ce 100%);
+}
+
+html[data-mode='unit'] :is(.brand, .foot p, .synth, .keys, .seq, .toast) {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+}
+
+html[data-mode='unit'] :is(.foot p, .synth, .keys, .seq, .toast) {
+  font-size: 10px;
+}
+
+html[data-mode='unit'] .brand {
+  font-weight: 700;
+  text-transform: none;
+}
+
+/* Las cuatro ruedas, arriba en el centro: solo de adorno. */
+html[data-mode='unit'] .top::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 116px;
+  height: 22px;
+  transform: translate(-50%, -50%);
+  background:
+    radial-gradient(circle at 11px 11px, rgb(255 255 255 / 0.35) 0 2px, var(--blue) 2.5px 9px, #00000033 9.5px 11px, transparent 11.5px),
+    radial-gradient(circle at 42px 11px, rgb(255 255 255 / 0.35) 0 2px, var(--green) 2.5px 9px, #00000033 9.5px 11px, transparent 11.5px),
+    radial-gradient(circle at 73px 11px, rgb(0 0 0 / 0.15) 0 2px, var(--white) 2.5px 9px, #00000033 9.5px 11px, transparent 11.5px),
+    radial-gradient(circle at 104px 11px, rgb(255 255 255 / 0.35) 0 2px, var(--orange) 2.5px 9px, #00000033 9.5px 11px, transparent 11.5px);
+  pointer-events: none;
+}
+
+/* La pantallita: el dibujo deja de ocupar todo y se mete en un hueco con bisel. */
+html[data-mode='unit'] .panel {
+  position: relative;
+  inset: auto;
+  grid-row: 2;
+  grid-column: 1;
+  min-height: 0;
+  margin: 2px 4px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--screen);
+  box-shadow:
+    0 0 0 5px #1d1d1d,
+    0 0 0 6px #b4b4ae,
+    0 1px 0 6px #f4f4f0;
+}
+
+/* El panel: un menú de la pantallita, claro sobre negro. */
+html[data-mode='unit'] .synth {
+  --ink: rgb(14 14 14 / 0.88);
+  --page: #e8e8e8;
+  grid-column: 1;
+  margin: 10px 12px;
+  max-height: calc(100% - 20px);
+  border: 1px solid #2c2c2c;
+  border-radius: 6px;
+  backdrop-filter: blur(3px);
+}
+
+html[data-mode='unit'] .synth__head span:first-child {
+  border-radius: 2px;
+  background: var(--orange);
+  color: #fff;
+}
+
+html[data-mode='unit'] .synth__section {
+  border-top-color: #2c2c2c;
+}
+
+html[data-mode='unit'] .synth__title {
+  opacity: 0.45;
+}
+
+html[data-mode='unit'] .synth__choice button {
+  border-color: #3a3a3a;
+  border-radius: 3px;
+}
+
+html[data-mode='unit'] .synth__choice button.is-on {
+  border-color: var(--page);
+  background: var(--page);
+  color: #111;
+}
+
+html[data-mode='unit'] .synth__random {
+  border-color: #4a4a4a;
+  border-radius: 3px;
+}
+
+/* Cada deslizador, del color de una de las cuatro ruedas, por turnos. */
+html[data-mode='unit'] .synth__row {
+  --knob: var(--blue);
+}
+
+html[data-mode='unit'] .synth__row:nth-of-type(4n + 2) {
+  --knob: var(--green);
+}
+
+html[data-mode='unit'] .synth__row:nth-of-type(4n + 3) {
+  --knob: var(--white);
+}
+
+html[data-mode='unit'] .synth__row:nth-of-type(4n) {
+  --knob: var(--orange);
+}
+
+html[data-mode='unit'] .synth input[type='range']::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 1px;
+  background: #383838;
+}
+
+html[data-mode='unit'] .synth input[type='range']::-moz-range-track {
+  height: 2px;
+  border-radius: 1px;
+  background: #383838;
+}
+
+html[data-mode='unit'] .synth input[type='range']::-webkit-slider-thumb {
+  width: 11px;
+  height: 11px;
+  margin-top: -4.5px;
+  border-radius: 50%;
+  background: var(--knob);
+}
+
+html[data-mode='unit'] .synth input[type='range']::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--knob);
+}
+
+/* Los botones del secuenciador: teclas claras que se hunden. */
+html[data-mode='unit'] .seq button {
+  border: 0;
+  border-radius: 3px;
+  background: var(--cap);
+  color: var(--ink);
+  box-shadow:
+    0 1.5px 0 var(--cap-edge),
+    0 2px 3px rgb(0 0 0 / 0.12);
+  transition: transform 60ms ease, box-shadow 60ms ease;
+}
+
+html[data-mode='unit'] .seq button:active {
+  transform: translateY(1px);
+  box-shadow: 0 0.5px 0 var(--cap-edge);
+}
+
+html[data-mode='unit'] .seq button.is-on {
+  background: var(--ink);
+  color: var(--cap);
+  box-shadow: 0 1.5px 0 #000;
+}
+
+html[data-mode='unit'] .seq .seq__play.is-on {
+  background: var(--green);
+  color: #fff;
+  box-shadow: 0 1.5px 0 #168a42;
+}
+
+html[data-mode='unit'] .seq .seq__rec.is-on {
+  background: var(--orange);
+  color: #fff;
+  box-shadow: 0 1.5px 0 #b83a0a;
+}
+
+html[data-mode='unit'] .seq__rec::before {
+  background: var(--orange);
+}
+
+html[data-mode='unit'] .seq__rec.is-on::before {
+  background: #fff;
+}
+
+@media (hover: hover) {
+  html[data-mode='unit'] .seq button:not(.is-on):hover {
+    background: #fafaf7;
+  }
+}
+
+/* El tempo, en una pantallita negra con números naranjas. */
+html[data-mode='unit'] .seq__field {
+  padding: 3px 7px 3px 4px;
+  border: 0;
+  border-radius: 3px;
+  background: var(--screen);
+  color: var(--orange);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.6);
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-mode='unit'] .seq__field:focus-within {
+  outline-color: var(--orange);
+}
+
+html[data-mode='unit'] .seq__swing input {
+  accent-color: var(--orange);
+}
+
+html[data-mode='unit'] .seq .seq__add {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--cap-edge);
+}
+
+/* La rejilla: cada pista, de un color (synth, naranja; acid, verde; drums, azul). */
+html[data-mode='unit'] .seq__grid {
+  --hue: var(--orange);
+  padding: 6px;
+  border-radius: 6px;
+  background: #c9c9c4;
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.18);
+}
+
+html[data-mode='unit'] .seq__grid[data-track='acid'] {
+  --hue: var(--green);
+}
+
+html[data-mode='unit'] .seq__grid[data-track='drums'] {
+  --hue: var(--blue);
+}
+
+html[data-mode='unit'] .seq .seq__cell {
+  border: 0;
+  border-radius: 2px;
+}
+
+html[data-mode='unit'] .seq .seq__cell.is-tied {
+  background: color-mix(in srgb, var(--hue) 30%, var(--cap));
+}
+
+html[data-mode='unit'] .seq .seq__cell.is-on {
+  background: var(--hue);
+  color: #fff;
+  box-shadow: 0 1.5px 0 color-mix(in srgb, var(--hue) 60%, #000);
+}
+
+html[data-mode='unit'] .seq .seq__cell.is-on[data-level='1'] {
+  background: color-mix(in srgb, var(--hue) 35%, var(--cap));
+}
+
+html[data-mode='unit'] .seq .seq__cell.is-on[data-level='2'] {
+  background: color-mix(in srgb, var(--hue) 65%, var(--cap));
+}
+
+html[data-mode='unit'] .seq .seq__cell.is-cursor {
+  outline: 1.5px solid var(--ink);
+}
+
+html[data-mode='unit'] .seq .seq__cell.is-now,
+html[data-mode='unit'] .seq .seq__cell.is-on.is-now {
+  box-shadow: inset 0 -3px 0 var(--ink);
+  filter: none;
+}
+
+/* El teclado: teclas sueltas, con aire entre ellas, que se hunden; las negras, de
+   grafito; al pulsarlas, un piloto del color de la pista. */
+html[data-mode='unit'] .keys__board {
+  gap: 3px;
+}
+
+html[data-mode='unit'] .key {
+  border: 0;
+  border-radius: 4px;
+  background: var(--cap);
+  box-shadow:
+    0 2.5px 0 var(--cap-edge),
+    0 3px 5px rgb(0 0 0 / 0.14);
+  transition: transform 50ms ease, box-shadow 50ms ease;
+}
+
+html[data-mode='unit'] .key.is-down {
+  background: #e4e4df;
+  transform: translateY(2px);
+  box-shadow: 0 0.5px 0 var(--cap-edge);
+}
+
+html[data-mode='unit'] .key.is-down::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: var(--orange);
+}
+
+html[data-mode='unit'] .keys.has-names .key.is-down::after {
+  top: auto;
+  bottom: 16px;
+}
+
+html[data-mode='unit'] .key--black {
+  z-index: 1;
+  border: 0;
+  border-radius: 3px;
+  background: #2a2a2a;
+  box-shadow:
+    0 2.5px 0 #0e0e0e,
+    0 3px 5px rgb(0 0 0 / 0.25);
+}
+
+html[data-mode='unit'] .key--black.is-down {
+  background: #333;
+  box-shadow: 0 0.5px 0 #0e0e0e;
+}
+
+html[data-mode='unit'] :is(.key__label, .key__name, .key.is-down .key__label, .key.is-down .key__name) {
+  color: #555;
+}
+
+html[data-mode='unit'] :is(.key--black .key__label, .key--black.is-down .key__label) {
+  color: #aaa;
+}
+
+/* La octava: dos ruedas, azul para bajar y naranja para subir. */
+html[data-mode='unit'] .keys__octave button {
+  flex: none;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, rgb(255 255 255 / 0.3), transparent 60%), var(--blue);
+  color: #fff;
+  box-shadow:
+    0 2px 0 rgb(0 0 0 / 0.3),
+    0 0 0 3px #c4c4bf;
+}
+
+html[data-mode='unit'] .keys__octave button:last-child {
+  background-color: var(--orange);
+}
+
+html[data-mode='unit'] .keys__octave button:active {
+  transform: translateY(1px);
+  box-shadow:
+    0 1px 0 rgb(0 0 0 / 0.3),
+    0 0 0 3px #c4c4bf;
+}
+
+/* El pie y el aviso: una tira de grafito con las esquinas redondeadas. */
+html[data-mode='unit'] .foot,
+html[data-mode='unit'] .toast {
+  border-radius: 4px;
+}
+
+html[data-mode='unit'] .foot__tag {
+  border-radius: 2px;
+  background: var(--orange);
+  color: #fff;
+}
+
+@media (max-width: 47.99rem) {
+  html[data-mode='unit'] .synth {
+    width: auto;
+    margin: 6px;
+    max-height: calc(100% - 12px);
+  }
+
+  html[data-mode='unit'] .top::after {
+    display: none;
+  }
 }
