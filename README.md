@@ -23,7 +23,7 @@ Demo: [scorcoles.github.io/iksynth](https://scorcoles.github.io/iksynth/) · En 
 
 - **Random** (o la tecla R), en synth y acid: una variación al azar del preset elegido, siempre desde sus valores. Tiempos y frecuencias, de la mitad al doble más o menos; mezclas y cantidades, un poco arriba o abajo. Lo que el preset tiene a cero se queda a cero.
 - El sonido se enciende solo con la primera nota o el primer play; el altavoz de arriba lo apaga y lo enciende. Sin el foco de la ventana, se calla.
-- Tres modos (← Prev · Next → en el pie, las flechas o `#orb`, `#wire`): **ridge**, el espectro como una cordillera que se aleja (graves a la izquierda, agudos a la derecha), lima apagado sobre grafito; **orb**, una esfera de puntos que respira con el sonido (los graves empujan el ecuador, los agudos los polos, y la onda la riza alrededor), azul hielo sobre negro; **wire**, la misma esfera en malla gris sobre papel.
+- Dos modos (← Prev · Next → en el pie, las flechas o `#wire`): **orb**, una esfera de puntos que respira con el sonido (los graves empujan el ecuador, los agudos los polos, y la onda la riza alrededor), azul hielo sobre negro; **wire**, la misma esfera en malla gris sobre papel.
 
 ## Cómo está hecho
 
@@ -36,7 +36,7 @@ Demo: [scorcoles.github.io/iksynth](https://scorcoles.github.io/iksynth/) · En 
 | `src/audio.js` | El bus de salida: la mezcla, el silencio, el foco de la ventana y los analizadores. |
 | `src/synth.js` · `src/acid.js` · `src/drums.js` | Las tres pistas: el sinte, el bajo ácido y la caja de ritmos. |
 | `src/sequencer.js` · `src/seqview.js` | El secuenciador (los 16 pasos, el transporte y la grabación) y lo que se ve de él. |
-| `src/visual.js` | Lo que se ve: la cordillera, la esfera y su malla. |
+| `src/visual.js` | Lo que se ve: la esfera de puntos y su malla. |
 | `src/panel.js` | El panel con el sonido de cada pista. |
 | `src/keys.js` | Tocar: el teclado del ordenador y el de la pantalla. Un teclado MIDI solo tendría que llamar a `noteOn` y `noteOff`. |
 | `src/song.js` · `src/share.js` | La canción en la URL (empaquetada y comprimida) y compartirla con un enlace. |

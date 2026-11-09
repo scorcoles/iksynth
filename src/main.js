@@ -14,17 +14,16 @@
 //   drums.js     → la caja de ritmos
 //   sequencer.js → los 16 pasos, el transporte y la grabación
 //   seqview.js   → lo que se ve del secuenciador
-//   visual.js    → lo que se ve: la cordillera del espectro, la esfera y su malla
+//   visual.js    → lo que se ve: la esfera de puntos y su malla
 //   panel.js     → el panel con el sonido de cada pista
 //   keys.js      → tocar: el teclado del ordenador y el de la pantalla
 //   song.js      → la canción en la URL
 //   share.js     → compartir la canción, con un enlace
 //   main.js      → el escenario, la cámara, los modos, las pistas y el bucle (este archivo)
 //
-// Tres modos, con «Prev» y «Next» en el pie, las flechas del teclado o la dirección
-// (#orb, #wire): «ridge», el espectro como una cordillera, lima apagado sobre grafito; «orb», una
-// esfera de puntos que respira con el sonido, azul hielo sobre negro azulado; y «wire», la
-// misma esfera en malla gris sobre papel.
+// Dos modos, con «Prev» y «Next» en el pie, las flechas del teclado o la dirección
+// (#wire): «orb», una esfera de puntos que respira con el sonido, azul hielo sobre negro
+// azulado; y «wire», la misma esfera en malla gris sobre papel.
 
 import * as THREE from 'three';
 import { createBus } from './audio.js';
@@ -43,7 +42,6 @@ import '../style.css';
 // Los modos: el color de la página y el de la tinta, y desde dónde mira la cámara (su
 // sitio y adónde mira, para una pantalla apaisada; en vertical, se aleja).
 const LOOKS = {
-  ridge: { page: '#141514', ink: '#a6bf5c', eye: [0, 1.5, 3.4], target: [0, 0.15, -1.9], fog: [3.6, 9.5] },
   orb: { page: '#070a12', ink: '#a9c9ff', eye: [0, 0, 4.8], target: [0, -0.22, 0], fog: [4.2, 6.2] },
   wire: { page: '#eeeeee', ink: '#333333', eye: [0, 0, 4.8], target: [0, -0.22, 0], fog: [4.2, 6.4] },
 };

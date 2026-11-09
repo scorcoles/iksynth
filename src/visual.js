@@ -1,10 +1,7 @@
 // =========================================================================================
-// Lo que se ve: el sonido dibujado, de tres maneras
+// Lo que se ve: el sonido dibujado en una esfera, de dos maneras
 // =========================================================================================
 //
-//   ridge → el espectro como una cordillera: cada instante, una línea (los graves a la
-//           izquierda, los agudos a la derecha) que se aleja hacia el fondo; cada línea
-//           tapa las de detrás.
 //   orb   → una esfera de puntos que respira con el sonido: los graves empujan el ecuador,
 //           los agudos los polos, y la onda la riza alrededor.
 //   wire  → la misma esfera, en malla gris sobre papel.
@@ -56,113 +53,6 @@ export function toBands(db, sampleRate, out) {
     prev = here;
   }
   return out;
-}
-
-// ---- ridge ---------------------------------------------------------------------------------
-
-// Cuántas líneas hay a la vez, cuántas nacen por segundo, lo ancha y lo alta que es la
-// cordillera y la distancia entre líneas.
-const ROWS = 64;
-const ROWS_PER_SECOND = 28;
-const RIDGE_WIDTH = 4.2;
-const RIDGE_HEIGHT = 1.15;
-const ROW_GAP = 0.085;
-
-function createRidge() {
-  const P = BANDS;
-  const history = new Float32Array(ROWS * P);
-  // Un poco de ruido quieto por línea, para que sin sonido no sea una rejilla muerta.
-  const grain = new Float32Array(ROWS * P);
-
-  // Las líneas: P puntos por fila, unidos de dos en dos.
-  const linePos = new Float32Array(ROWS * P * 3);
-  const lineIndex = [];
-  for (let r = 0; r < ROWS; r++) for (let i = 0; i < P - 1; i++) lineIndex.push(r * P + i, r * P + i + 1);
-  const lineGeo = new THREE.BufferGeometry();
-  lineGeo.setAttribute('position', new THREE.BufferAttribute(linePos, 3).setUsage(THREE.DynamicDrawUsage));
-  lineGeo.setIndex(lineIndex);
-  const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, fog: true });
-  const lines = new THREE.LineSegments(lineGeo, lineMat);
-  lines.frustumCulled = false;
-
-  // Las cortinas: debajo de cada línea, una tira del color de la página hasta el suelo,
-  // que tapa las de detrás. Un pelo más atrás que su línea, para que la línea se vea.
-  const curtainPos = new Float32Array(ROWS * P * 2 * 3);
-  const curtainIndex = [];
-  for (let r = 0; r < ROWS; r++) {
-    for (let i = 0; i < P - 1; i++) {
-      const a = (r * P + i) * 2;
-      curtainIndex.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
-    }
-  }
-  const curtainGeo = new THREE.BufferGeometry();
-  curtainGeo.setAttribute('position', new THREE.BufferAttribute(curtainPos, 3).setUsage(THREE.DynamicDrawUsage));
-  curtainGeo.setIndex(curtainIndex);
-  const curtainMat = new THREE.MeshBasicMaterial({
-    color: 0x000000,
-    side: THREE.DoubleSide,
-    polygonOffset: true,
-    polygonOffsetFactor: 1,
-    polygonOffsetUnits: 1,
-  });
-  const curtains = new THREE.Mesh(curtainGeo, curtainMat);
-  curtains.frustumCulled = false;
-
-  const group = new THREE.Group();
-  group.add(curtains, lines);
-
-  let head = 0; // la fila más nueva, en el anillo de history
-  let phase = 0; // cuánto ha avanzado hacia el fondo la fila más nueva (0–1)
-
-  function push(bands) {
-    head = (head + 1) % ROWS;
-    for (let i = 0; i < P; i++) {
-      history[head * P + i] = bands[i];
-      grain[head * P + i] = Math.random();
-    }
-  }
-
-  function update(dt, bands) {
-    phase += dt * ROWS_PER_SECOND;
-    while (phase >= 1) {
-      phase -= 1;
-      push(bands);
-    }
-    // La fila más nueva, siempre al día (no espera a nacer la siguiente).
-    for (let i = 0; i < P; i++) history[head * P + i] = Math.max(history[head * P + i] * 0.6, bands[i]);
-
-    for (let k = 0; k < ROWS; k++) {
-      const slot = (head - k + ROWS) % ROWS;
-      const z = -(k + phase) * ROW_GAP;
-      for (let i = 0; i < P; i++) {
-        const u = i / (P - 1);
-        // Los bordes, más tranquilos: una campana muy abierta.
-        const edge = Math.sin(Math.PI * u) ** 0.35;
-        const y = (history[slot * P + i] * RIDGE_HEIGHT + grain[slot * P + i] * 0.012) * edge;
-        const x = (u - 0.5) * RIDGE_WIDTH;
-        const v = (k * P + i) * 3;
-        linePos[v] = x;
-        linePos[v + 1] = y;
-        linePos[v + 2] = z;
-        const c = (k * P + i) * 6;
-        curtainPos[c] = x;
-        curtainPos[c + 1] = y;
-        curtainPos[c + 2] = z;
-        curtainPos[c + 3] = x;
-        curtainPos[c + 4] = -0.05;
-        curtainPos[c + 5] = z;
-      }
-    }
-    lineGeo.attributes.position.needsUpdate = true;
-    curtainGeo.attributes.position.needsUpdate = true;
-  }
-
-  function setColors(page, ink) {
-    lineMat.color.set(ink);
-    curtainMat.color.set(page);
-  }
-
-  return { object: group, update, setColors, depth: ROWS * ROW_GAP };
 }
 
 // ---- orb y wire ------------------------------------------------------------------------------
@@ -332,21 +222,12 @@ function createOrb() {
 // ---- todo junto -----------------------------------------------------------------------------
 
 export function createVisual(scene) {
-  const ridge = createRidge();
   const orb = createOrb();
-  scene.add(ridge.object, orb.object);
+  scene.add(orb.object);
   scene.fog = new THREE.Fog(0x000000, 2, 9);
 
-  let look = 'ridge';
-
   return {
-    ridgeDepth: ridge.depth,
-
-    setLook(name, page, ink, pixelRatio) {
-      look = name;
-      ridge.object.visible = look === 'ridge';
-      orb.object.visible = look !== 'ridge';
-      ridge.setColors(page, ink);
+    setLook(look, page, ink, pixelRatio) {
       orb.setLook(look, ink, pixelRatio);
       scene.fog.color.set(page);
     },
@@ -354,8 +235,7 @@ export function createVisual(scene) {
     // bands: el espectro en bandas (0–1); wave: la onda (−1 a 1); hit: lo reciente que es
     // la última nota (1 recién pulsada, 0 hace rato); kicked: si acaba de pulsarse una.
     update(dt, bands, wave, hit, kicked) {
-      if (look === 'ridge') ridge.update(dt, bands);
-      else orb.update(dt, bands, wave, hit, kicked);
+      orb.update(dt, bands, wave, hit, kicked);
     },
   };
 }
