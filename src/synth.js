@@ -7,11 +7,8 @@
 //   voces (hasta 12 a la vez; cada una, un oscilador, «unison» si se le dan varias voces,
 //   con su envolvente de volumen y su filtro de paso bajo con su propia envolvente)
 //     → LFO (uno de tres efectos, según a qué se aplique: el filtro, el tono o el volumen)
-//     → drive (distorsión) → chorus → delay → reverb → volumen general
-//     → [aquí escuchan los analizadores: lo que se dibuja]
-//     → silencio (el botón del altavoz) → limitador → foco de la ventana → altavoces
-//
-// Los analizadores van antes del silencio: con el sonido apagado, se sigue dibujando.
+//     → drive (distorsión) → chorus → delay → reverb → volumen de la pista
+//     → el bus de salida (audio.js), con las otras pistas
 
 import * as Tone from 'tone';
 
@@ -124,11 +121,8 @@ const GROUPS = {
 };
 const groupOf = (key) => Object.keys(GROUPS).find((g) => GROUPS[g].includes(key));
 
-export function createSynth() {
-  // Sin margen de anticipación: una nota suena en cuanto se pulsa (Tone, por defecto,
-  // programa todo una décima de segundo por delante, que se nota al tocar).
-  Tone.setContext(new Tone.Context({ latencyHint: 'interactive', lookAhead: 0 }));
-
+// output: adónde sale (la entrada del bus).
+export function createSynth(output) {
   const params = { ...DEFAULTS };
 
   const voices = new Tone.PolySynth(Tone.MonoSynth);
@@ -148,27 +142,8 @@ export function createSynth() {
   const delay = new Tone.FeedbackDelay({ delayTime: 0.3, feedback: 0.35, wet: 0 });
   const reverb = new Tone.Reverb({ decay: 3, preDelay: 0.02, wet: 0 });
   const volume = new Tone.Volume(params.volume);
-  const mute = new Tone.Gain(1);
-  const limiter = new Tone.Limiter(-1);
-  const focus = new Tone.Gain(1);
 
-  voices.chain(vibrato, autoFilter, tremolo, drive, driveTrim, chorus, delay, reverb, volume, mute, limiter, focus, Tone.getDestination());
-
-  // Lo que se dibuja: el espectro (en decibelios, de 0 a la mitad de la frecuencia de
-  // muestreo) y la onda tal cual.
-  const fft = new Tone.Analyser({ type: 'fft', size: 2048, smoothing: 0.72 });
-  const wave = new Tone.Analyser({ type: 'waveform', size: 1024 });
-  volume.connect(fft);
-  volume.connect(wave);
-
-  // Sin el foco de la ventana (otra pestaña, otra aplicación) se calla; al volver, suena.
-  const followFocus = () => {
-    const on = document.hasFocus() && !document.hidden;
-    focus.gain.setTargetAtTime(on ? 1 : 0, Tone.now(), 0.12);
-  };
-  addEventListener('blur', followFocus);
-  addEventListener('focus', followFocus);
-  document.addEventListener('visibilitychange', followFocus);
+  voices.chain(vibrato, autoFilter, tremolo, drive, driveTrim, chorus, delay, reverb, volume, output);
 
   // Cada grupo, de los parámetros a Tone.
   const apply = {
@@ -236,10 +211,9 @@ export function createSynth() {
   const applyAll = () => Object.keys(GROUPS).forEach((g) => apply[g]());
   applyAll();
 
-  // Las notas que suenan ahora (en número MIDI) y la intensidad de la última pulsada, para
-  // los dibujos.
+  // Las notas que suenan ahora, tocadas en directo (en número MIDI).
   const held = new Set();
-  let lastHit = 0;
+  const hz = (midi) => Tone.Frequency(midi, 'midi').toFrequency();
 
   return {
     params,
@@ -260,33 +234,30 @@ export function createSynth() {
       applyAll();
     },
 
-    // El navegador no deja sonar nada hasta un clic, un toque o una tecla: esto, en el
-    // primero.
-    start: () => Tone.start(),
+    // Para cargar lo guardado: todos los parámetros de golpe.
+    load(saved) {
+      for (const key of Object.keys(DEFAULTS)) if (typeof saved?.[key] === typeof DEFAULTS[key]) params[key] = saved[key];
+      applyAll();
+    },
 
+    // En directo: suena ya.
     noteOn(midi, velocity = 0.8) {
       if (held.has(midi)) return;
       held.add(midi);
-      lastHit = performance.now();
-      voices.triggerAttack(Tone.Frequency(midi, 'midi').toFrequency(), Tone.now(), velocity);
+      voices.triggerAttack(hz(midi), Tone.immediate(), velocity);
     },
     noteOff(midi) {
       if (!held.delete(midi)) return;
-      voices.triggerRelease(Tone.Frequency(midi, 'midi').toFrequency(), Tone.now());
+      voices.triggerRelease(hz(midi), Tone.immediate());
     },
     releaseAll() {
       held.clear();
       voices.releaseAll();
     },
-    held,
-    lastHit: () => lastHit,
 
-    setMuted(muted) {
-      mute.gain.setTargetAtTime(muted ? 0 : 1, Tone.now(), 0.05);
+    // Desde el secuenciador: una nota que empieza en «time» y dura «duration» segundos.
+    play(midi, duration, time, velocity = 0.8) {
+      voices.triggerAttackRelease(hz(midi), duration, time, velocity);
     },
-
-    spectrum: () => fft.getValue(),
-    waveform: () => wave.getValue(),
-    sampleRate: () => Tone.getContext().sampleRate,
   };
 }

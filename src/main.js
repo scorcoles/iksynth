@@ -2,16 +2,23 @@
 // iksynth: un sintetizador en el navegador, con su sonido dibujado en tiempo real
 // =========================================================================================
 //
-// Un experimento de VERTIK. Se toca con el teclado del ordenador o con el de la pantalla;
-// el panel de la derecha cambia el sonido (oscilador, envolvente, filtro, LFO y efectos), y
+// Un experimento de VERTIK. Tres pistas: «synth» (el sinte), «acid» (un bajo ácido, con
+// accent y slide) y «drums» (una caja de ritmos), cada una con su secuencia de 16 pasos.
+// Se toca la pista elegida con el teclado del ordenador o con el de la pantalla, y lo que
+// se toca se puede grabar en su secuencia; el panel de la derecha cambia su sonido. Todo
 // lo que suena se dibuja mientras suena.
 //
-//   synth.js  → el sonido: Tone.js, las voces, el LFO, los efectos y los analizadores
-//   visual.js → lo que se ve: la cordillera del espectro, la esfera y su malla
-//   panel.js  → el panel del sinte
-//   keys.js   → tocar: el teclado del ordenador y el de la pantalla
-//   share.js  → compartir una foto
-//   main.js   → el escenario, la cámara, los modos y el bucle (este archivo)
+//   audio.js     → el bus de salida: la mezcla, el silencio, el foco y los analizadores
+//   synth.js     → el sinte: las voces, el LFO y los efectos
+//   acid.js      → el bajo ácido
+//   drums.js     → la caja de ritmos
+//   sequencer.js → los 16 pasos, el transporte y la grabación
+//   seqview.js   → lo que se ve del secuenciador
+//   visual.js    → lo que se ve: la cordillera del espectro, la esfera y su malla
+//   panel.js     → el panel con el sonido de cada pista
+//   keys.js      → tocar: el teclado del ordenador y el de la pantalla
+//   share.js     → compartir una foto
+//   main.js      → el escenario, la cámara, los modos, las pistas y el bucle (este archivo)
 //
 // Tres modos, con «Prev» y «Next» en el pie, las flechas del teclado o la dirección
 // (#orb, #wire): «ridge», el espectro como una cordillera, lima apagado sobre grafito; «orb», una
@@ -19,7 +26,12 @@
 // misma esfera en malla gris sobre papel.
 
 import * as THREE from 'three';
+import { createBus } from './audio.js';
 import { createSynth } from './synth.js';
+import { createAcid } from './acid.js';
+import { createDrums, VOICES } from './drums.js';
+import { createSequencer, TRACKS } from './sequencer.js';
+import { createSeqView } from './seqview.js';
 import { createVisual, toBands, BANDS } from './visual.js';
 import { createPanel } from './panel.js';
 import { setupKeys } from './keys.js';
@@ -86,35 +98,160 @@ const fromHash = () => setMode(decodeURIComponent(location.hash.slice(1)));
 window.addEventListener('hashchange', fromHash);
 fromHash();
 
-// El sinte y su panel.
-const synth = createSynth();
-createPanel(document.querySelector('[data-panel]'), synth);
+// El sonido: el bus y las tres pistas.
+const bus = createBus();
+const engines = {
+  synth: createSynth(bus.input),
+  acid: createAcid(bus.input),
+  drums: createDrums(bus.input),
+};
+
+// Lo que hay guardado en este navegador (los sonidos, las secuencias y la pista
+// elegida). Puede no haber nada, o no poder leerse: entonces, lo de serie.
+const STORE = 'iksynth:v1';
+let saved = null;
+try {
+  saved = JSON.parse(localStorage.getItem(STORE) || 'null');
+} catch {
+  saved = null;
+}
+for (const t of TRACKS) if (saved?.[t]) engines[t].load(saved[t]);
+
+let saveTimer = 0;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(STORE, JSON.stringify({
+        synth: engines.synth.params,
+        acid: engines.acid.params,
+        drums: engines.drums.params,
+        seq: seq.state,
+        track,
+      }));
+    } catch {
+      /* sin sitio o sin permiso: no se guarda, sin más */
+    }
+  }, 400);
+}
 
 // El altavoz de arriba: apagado de entrada. Como esto es un instrumento, la primera nota
-// lo enciende sola (si no se ha tocado antes el botón); después, manda el botón.
+// (o el primer play) lo enciende sola, si no se ha tocado antes el botón; después, manda
+// el botón.
 const soundButton = document.querySelector('[data-sound]');
 let soundOn = false;
 let soundTouched = false;
 function setSound(on) {
   soundOn = on;
-  synth.setMuted(!on);
-  if (on) synth.start();
+  bus.setMuted(!on);
+  if (on) bus.start();
   soundButton?.classList.toggle('is-on', on);
   soundButton?.setAttribute('aria-pressed', String(on));
   soundButton?.setAttribute('aria-label', on ? 'Apagar el sonido' : 'Encender el sonido');
 }
-synth.setMuted(true);
 soundButton?.addEventListener('click', () => {
   soundTouched = true;
   setSound(!soundOn);
 });
-
-// Tocar. Aunque el sonido esté apagado, se dibuja.
-let kicked = false;
-setupKeys(document.querySelector('[data-keys]'), synth, () => {
-  synth.start();
+const wake = () => {
+  bus.start();
   if (!soundTouched && !soundOn) setSound(true);
+};
+
+// Para los dibujos: cuándo sonó el último golpe, y si acaba de sonar uno.
+let lastHit = 0;
+let kicked = false;
+const hitNow = () => {
+  lastHit = performance.now();
   kicked = true;
+};
+
+// El secuenciador y su vista.
+let track = TRACKS.includes(saved?.track) ? saved.track : 'synth';
+const seq = createSequencer(engines, {
+  onChange() {
+    view?.render();
+    save();
+  },
+  onStep: (step) => view?.setStep(step),
+  onBeat(what) {
+    // El kick y las notas empujan la esfera; el resto de la caja, solo un poco.
+    if (what === 'drums') lastHit = Math.max(lastHit, performance.now() - 120);
+    else hitNow();
+  },
+});
+seq.load(saved?.seq);
+const view = createSeqView(document.querySelector('[data-seq]'), seq, {
+  play() {
+    wake();
+    seq.toggle();
+  },
+  setTrack,
+});
+
+// El panel: el sonido de la pista elegida.
+const panel = createPanel(document.querySelector('[data-panel]'), engines, save);
+
+// Tocar: la pista elegida. Con la caja, cada tecla blanca es un instrumento.
+const WHITE_OFFSETS = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16];
+const voiceOf = (midi) => {
+  const i = WHITE_OFFSETS.indexOf(midi - keys.base());
+  return i >= 0 && i < VOICES.length ? i : null;
+};
+const keys = setupKeys(document.querySelector('[data-keys]'), {
+  noteOn(midi) {
+    wake();
+    hitNow();
+    if (track === 'drums') {
+      const v = voiceOf(midi);
+      if (v == null) return;
+      engines.drums.trigger(v);
+      seq.noteOn('drums', v);
+    } else {
+      engines[track].noteOn(midi);
+      seq.noteOn(track, midi);
+    }
+  },
+  noteOff(midi) {
+    if (track === 'drums') {
+      const v = voiceOf(midi);
+      if (v != null) seq.noteOff('drums', v);
+    } else {
+      engines[track].noteOff(midi);
+      seq.noteOff(track, midi);
+    }
+  },
+  releaseAll() {
+    engines.synth.releaseAll();
+    engines.acid.releaseAll();
+  },
+});
+
+function setTrack(t) {
+  keys.releaseAll();
+  track = t;
+  panel.show(t);
+  keys.setNames(t === 'drums' ? VOICES : null);
+  view.setTrack(t);
+  save();
+}
+setTrack(track);
+
+// Atajos: espacio, play/stop; 1, 2 y 3, las pistas; retroceso, borrar el paso marcado.
+window.addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.target.closest?.('input[type="number"], textarea')) return;
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (e.repeat) return;
+    wake();
+    seq.toggle();
+  } else if (['Digit1', 'Digit2', 'Digit3'].includes(e.code)) {
+    setTrack(TRACKS[Number(e.code.slice(5)) - 1]);
+  } else if (e.code === 'Backspace' || e.code === 'Delete') {
+    e.preventDefault();
+    seq.clearStep(track);
+  }
 });
 
 // Compartir: una foto, con el marco del color de la página.
@@ -152,10 +289,10 @@ renderer.setAnimationLoop((now) => {
   scene.fog.near = look.fog[0] * away;
   scene.fog.far = look.fog[1] * away;
 
-  // El sonido, en bandas, y lo reciente que es la última nota.
-  toBands(synth.spectrum(), synth.sampleRate(), bands);
-  const hit = Math.exp(-(now - synth.lastHit()) / 250);
-  visual.update(dt, bands, synth.waveform(), hit, kicked);
+  // El sonido, en bandas, y lo reciente que es el último golpe.
+  toBands(bus.spectrum(), bus.sampleRate(), bands);
+  const hit = Math.exp(-(now - lastHit) / 250);
+  visual.update(dt, bands, bus.waveform(), hit, kicked);
   kicked = false;
 
   renderer.render(scene, camera);

@@ -8,8 +8,12 @@
 // español, la que va después de la L es la Ñ.
 //
 // En la pantalla, las mismas teclas dibujadas: se tocan con el dedo o el ratón, y
-// arrastrando se pasa de una a otra. Lo que suena desde cualquiera de los dos (o desde un
-// teclado MIDI, más adelante: basta con llamar a noteOn y noteOff) se ilumina aquí.
+// arrastrando se pasa de una a otra. Lo que suena desde cualquiera de los dos se ilumina
+// aquí.
+//
+// Qué suena lo decide main.js (la pista elegida): aquí solo se dice qué nota (en número
+// MIDI) empieza y cuál acaba. Con la caja de ritmos, cada tecla blanca es un instrumento
+// (A = kick, S = snare…) y su nombre se ve en la tecla.
 
 // Las teclas del ordenador, por su sitio (KeyboardEvent.code), y cuántos semitonos por
 // encima del do de la octava suena cada una.
@@ -29,10 +33,12 @@ const labelOf = (code, layout) => (layout?.get(code) || FALLBACK[code] || code.r
 const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 export const noteName = (midi) => `${NAMES[midi % 12]}${Math.floor(midi / 12) - 1}`;
 
-// root: donde va el teclado de la pantalla. synth: noteOn, noteOff, releaseAll y held.
-// onPlay: se llama con cada nota que empieza (para encender el sonido la primera vez).
-export function setupKeys(root, synth, onPlay) {
+// root: donde va el teclado de la pantalla. target: noteOn(midi), noteOff(midi) y
+// releaseAll().
+export function setupKeys(root, target) {
   let octave = 4;
+  // Las notas pulsadas ahora (en número MIDI).
+  const held = new Set();
   const base = () => (octave + 1) * 12; // el do de la octava, en número MIDI
 
   // ---- El teclado de la pantalla ----
@@ -60,7 +66,7 @@ export function setupKeys(root, synth, onPlay) {
     k.dataset.code = code;
     if (black) k.style.left = `${(w / whites) * 100}%`;
     else w++;
-    k.innerHTML = '<span class="key__label"></span>';
+    k.innerHTML = '<span class="key__name"></span><span class="key__label"></span>';
     keyEls.push(k);
   }
   // Primero las blancas y luego las negras: así las negras quedan encima.
@@ -70,19 +76,21 @@ export function setupKeys(root, synth, onPlay) {
 
   const paint = () => {
     octaveLabel.textContent = `oct ${octave}`;
-    for (const k of keyEls) k.classList.toggle('is-down', synth.held.has(base() + Number(k.dataset.offset)));
+    for (const k of keyEls) k.classList.toggle('is-down', held.has(base() + Number(k.dataset.offset)));
   };
   const setLabels = (layout) => keyEls.forEach((k) => (k.querySelector('.key__label').textContent = labelOf(k.dataset.code, layout)));
   setLabels(null);
   navigator.keyboard?.getLayoutMap?.().then(setLabels).catch(() => {});
 
   const play = (midi) => {
-    onPlay();
-    synth.noteOn(midi);
+    if (held.has(midi)) return;
+    held.add(midi);
+    target.noteOn(midi);
     paint();
   };
   const stop = (midi) => {
-    synth.noteOff(midi);
+    if (!held.delete(midi)) return;
+    target.noteOff(midi);
     paint();
   };
 
@@ -151,12 +159,27 @@ export function setupKeys(root, synth, onPlay) {
   });
   // Si la ventana pierde el foco con teclas pulsadas, no llegarían sus «keyup»: todo fuera.
   window.addEventListener('blur', () => {
+    releaseAll();
+  });
+  function releaseAll() {
     down.clear();
     pointers.clear();
-    synth.releaseAll();
+    held.clear();
+    target.releaseAll();
     paint();
-  });
+  }
 
   paint();
-  return { paint };
+  return {
+    // Al cambiar de pista: suelta todo (lo que sonaba era de la otra).
+    releaseAll,
+    // Nombres en las teclas blancas (los instrumentos de la caja), o null para quitarlos.
+    setNames(names) {
+      root.classList.toggle('has-names', !!names);
+      const whitesEls = keyEls.filter((k) => !k.classList.contains('key--black'));
+      whitesEls.forEach((k, i) => (k.querySelector('.key__name').textContent = names?.[i] ?? ''));
+    },
+    // El do de la octava (número MIDI), para traducir notas a instrumentos.
+    base,
+  };
 }

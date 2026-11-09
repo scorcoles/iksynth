@@ -1,13 +1,25 @@
 # iksynth
 
-Un sintetizador en el navegador, con su sonido dibujado en tiempo real. Un experimento de [VERTIK](https://www.vertik.net).
+Un sintetizador en el navegador, con un bajo ácido, una caja de ritmos y un secuenciador de 16 pasos; todo lo que suena se dibuja mientras suena. Un experimento de [VERTIK](https://www.vertik.net).
 
-- Se toca con el teclado del ordenador, como en casi todos los sintes de navegador: la fila de la A son las teclas blancas (A = do, hasta la Ñ) y la de encima, las negras (W, E, T, Y, U, O, P). Z y X bajan y suben una octava. O con el teclado de la pantalla, con el dedo o el ratón (arrastrando se pasa de una tecla a otra).
-- Hasta 12 notas a la vez. Cada voz: un oscilador (sin, tri, saw, sqr; con varias voces desafinadas entre sí, *unison*), su envolvente de volumen y un filtro de paso bajo de 24 dB con su propia envolvente.
-- Un LFO que se aplica al filtro, al tono (vibrato) o al volumen (trémolo), y efectos: drive (distorsión), chorus, delay y reverb.
-- Seis presets (init, pad, bass, pluck, lead, drone) y el panel de la derecha para cambiarlo todo. Doble clic en un deslizador: vuelve al valor del preset.
-- **Random** (o la tecla R): una variación al azar del preset elegido, siempre desde sus valores. Tiempos y frecuencias, de la mitad al doble más o menos; mezclas y cantidades, un poco arriba o abajo. Lo que el preset tiene a cero se queda a cero, y la onda, el destino del LFO y el volumen no cambian.
-- El sonido se enciende solo con la primera nota; el altavoz de arriba lo apaga y lo enciende. Sin el foco de la ventana, se calla.
+### Las tres pistas
+
+- **synth**: hasta 12 notas a la vez. Cada voz: un oscilador (sin, tri, saw, sqr; con varias voces desafinadas entre sí, *unison*), su envolvente de volumen y un filtro de paso bajo de 24 dB con su propia envolvente. Un LFO (al filtro, al tono o al volumen) y efectos: drive, chorus, delay y reverb. Seis presets (init, pad, bass, pluck, lead, drone).
+- **acid**: un bajo monofónico para líneas ácidas: diente de sierra o cuadrada por un filtro muy resonante con una envolvente corta. En cada paso, **accent** (más fuerte, y el filtro se abre más y se cierra antes) y **slide** (no se suelta: se desliza hasta la nota siguiente). Drive y delay. Presets classic, squelch y deep.
+- **drums**: una caja de ritmos sintetizada, sin muestras: kick, snare, clap, hat, open (el hat cerrado lo corta), tom y cow. Cada uno con su volumen, su afinación y su largo.
+
+### Tocar y grabar
+
+- Se toca la pista elegida (1, 2 y 3, o sus pestañas) con el teclado del ordenador: la fila de la A son las teclas blancas (A = do, hasta la Ñ) y la de encima, las negras (W, E, T, Y, U, O, P); Z y X bajan y suben una octava. O con el teclado de la pantalla (arrastrando se pasa de una tecla a otra). Con la caja, cada tecla blanca es un instrumento (A = kick, S = snare…), y su nombre se ve en la tecla.
+- **rec** en marcha: lo que se toca se cuadra al paso más cercano (en el synth, con su largo al soltar). **rec** parado: paso a paso; cada nota o acorde va al paso marcado y, al soltar, pasa al siguiente.
+- En la rejilla: tocar un paso de notas lo marca; accent, slide y los pasos de la caja se encienden y apagan tocándolos. **del** (o retroceso) borra el paso marcado; **clear**, dos veces, la pista entera.
+- Espacio, play y stop. Tempo (de 40 a 240 bpm; con mayúsculas, de diez en diez) y swing.
+- Los sonidos, las secuencias y la pista elegida se guardan en el navegador.
+
+### Lo demás
+
+- **Random** (o la tecla R), en synth y acid: una variación al azar del preset elegido, siempre desde sus valores. Tiempos y frecuencias, de la mitad al doble más o menos; mezclas y cantidades, un poco arriba o abajo. Lo que el preset tiene a cero se queda a cero.
+- El sonido se enciende solo con la primera nota o el primer play; el altavoz de arriba lo apaga y lo enciende. Sin el foco de la ventana, se calla.
 - Tres modos (← Prev · Next → en el pie, las flechas o `#orb`, `#wire`): **ridge**, el espectro como una cordillera que se aleja (graves a la izquierda, agudos a la derecha), lima apagado sobre grafito; **orb**, una esfera de puntos que respira con el sonido (los graves empujan el ecuador, los agudos los polos, y la onda la riza alrededor), azul hielo sobre negro; **wire**, la misma esfera en malla gris sobre papel.
 
 ## Cómo está hecho
@@ -17,10 +29,12 @@ Un sintetizador en el navegador, con su sonido dibujado en tiempo real. Un exper
 | Archivo | Qué hace |
 | --- | --- |
 | `index.html` · `style.css` | La página: el dibujo a toda pantalla, el símbolo, los botones, el panel, el teclado y el pie. |
-| `src/main.js` | El escenario, la cámara, los modos y el bucle. |
-| `src/synth.js` | El sonido: las voces, el LFO, los efectos, los presets y los analizadores. |
+| `src/main.js` | El escenario, la cámara, los modos, las pistas, los atajos y el guardado. |
+| `src/audio.js` | El bus de salida: la mezcla, el silencio, el foco de la ventana y los analizadores. |
+| `src/synth.js` · `src/acid.js` · `src/drums.js` | Las tres pistas: el sinte, el bajo ácido y la caja de ritmos. |
+| `src/sequencer.js` · `src/seqview.js` | El secuenciador (los 16 pasos, el transporte y la grabación) y lo que se ve de él. |
 | `src/visual.js` | Lo que se ve: la cordillera, la esfera y su malla. |
-| `src/panel.js` | El panel del sinte. |
+| `src/panel.js` | El panel con el sonido de cada pista. |
 | `src/keys.js` | Tocar: el teclado del ordenador y el de la pantalla. Un teclado MIDI solo tendría que llamar a `noteOn` y `noteOff`. |
 | `src/share.js` | Compartir una foto. |
 

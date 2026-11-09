@@ -1,20 +1,27 @@
 // =========================================================================================
-// El panel del sinte: presets y todos los controles, por secciones
+// El panel: los controles del sonido de la pista elegida (synth, acid o drums)
 // =========================================================================================
 //
 // Un bloque del color de la tinta, como el pie, con la letra del color de la página.
-// Plegable con su cabecera; abierto de entrada solo en escritorio. Los deslizadores que
-// abarcan mucho (tiempos, frecuencias) van en escala logarítmica: la mitad del recorrido
-// es la media geométrica, no la aritmética.
+// Plegable con su cabecera; abierto de entrada solo en escritorio. Cada pista tiene su
+// cuerpo (presets si los tiene, random y sus secciones); se ve el de la pista elegida.
+// Los deslizadores que abarcan mucho (tiempos, frecuencias) van en escala logarítmica: la
+// mitad del recorrido es la media geométrica, no la aritmética.
 
 import { PRESETS, JITTER } from './synth.js';
+import { ACID_PRESETS, ACID_JITTER } from './acid.js';
+import { VOICES } from './drums.js';
 
 const hz = (v) => (v >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 1 : 2)}k` : `${Math.round(v)}`);
 const sec = (v) => (v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed(v < 10 ? 2 : 1)}s`);
 const pct = (v) => `${Math.round(v * 100)}%`;
+const db = (v) => `${v.toFixed(1)}db`;
+const semi = (v) => `${v > 0 ? '+' : ''}${v}st`;
+const times = (v) => `×${v.toFixed(2)}`;
 
-// Las secciones y sus controles. «choice»: botones, uno elegido; si no, un deslizador.
-const SECTIONS = [
+// Las secciones y sus controles, por pista. «choice»: botones, uno elegido; si no, un
+// deslizador.
+const SYNTH_SECTIONS = [
   {
     title: 'osc',
     rows: [
@@ -63,9 +70,57 @@ const SECTIONS = [
   },
   {
     title: 'out',
-    rows: [{ key: 'volume', label: 'volume', min: -40, max: 0, step: 0.5, format: (v) => `${v.toFixed(1)}db` }],
+    rows: [{ key: 'volume', label: 'volume', min: -40, max: 0, step: 0.5, format: db }],
   },
 ];
+
+const ACID_SECTIONS = [
+  {
+    title: 'voice',
+    rows: [
+      { key: 'wave', choice: [['sawtooth', 'saw'], ['square', 'sqr']] },
+      { key: 'cutoff', label: 'cutoff', min: 40, max: 5000, log: true, format: hz },
+      { key: 'resonance', label: 'reso', min: 0.5, max: 25, format: (v) => v.toFixed(1) },
+      { key: 'envAmount', label: 'env mod', min: 0, max: 6, format: (v) => `${v.toFixed(1)}oct` },
+      { key: 'envDecay', label: 'decay', min: 0.03, max: 1.5, log: true, format: sec },
+      { key: 'accent', label: 'accent', min: 0, max: 1, format: pct },
+    ],
+  },
+  {
+    title: 'fx',
+    rows: [
+      { key: 'drive', label: 'drive', min: 0, max: 1, format: pct },
+      { key: 'delay', label: 'delay', min: 0, max: 1, format: pct },
+      { key: 'delayTime', label: 'time', min: 0.03, max: 1, log: true, format: sec },
+      { key: 'feedback', label: 'feedback', min: 0, max: 0.9, format: pct },
+    ],
+  },
+  {
+    title: 'out',
+    rows: [{ key: 'volume', label: 'volume', min: -40, max: 0, step: 0.5, format: db }],
+  },
+];
+
+const DRUM_SECTIONS = [
+  ...VOICES.map((v) => ({
+    title: v,
+    rows: [
+      { key: `${v}Level`, label: 'level', min: -40, max: 6, step: 0.5, format: db },
+      { key: `${v}Tune`, label: 'tune', min: -12, max: 12, step: 1, format: semi },
+      { key: `${v}Decay`, label: 'decay', min: 0.25, max: 3, log: true, format: times },
+    ],
+  })),
+  {
+    title: 'out',
+    rows: [{ key: 'volume', label: 'volume', min: -40, max: 0, step: 0.5, format: db }],
+  },
+];
+
+export const PANELS = {
+  synth: { sections: SYNTH_SECTIONS, presets: Object.keys(PRESETS), jitter: JITTER },
+  acid: { sections: ACID_SECTIONS, presets: Object.keys(ACID_PRESETS), jitter: ACID_JITTER },
+  drums: { sections: DRUM_SECTIONS },
+};
 
 // De la posición del deslizador (0–1000) al valor, y al revés.
 const STEPS = 1000;
@@ -80,84 +135,69 @@ const toSlider = (row, v) => {
   return Math.round(Math.max(0, Math.min(1, t)) * STEPS);
 };
 
-export function createPanel(root, synth) {
-  const el = (tag, cls, text) => {
-    const n = document.createElement(tag);
-    if (cls) n.className = cls;
-    if (text != null) n.textContent = text;
-    return n;
-  };
+const el = (tag, cls, text) => {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+};
 
-  // La cabecera: el nombre y plegar/desplegar.
-  const head = el('button', 'synth__head');
-  head.type = 'button';
-  head.innerHTML = '<span>synth</span><span class="synth__fold" aria-hidden="true"></span>';
+// Un cuerpo del panel: el de una pista. engine: su sonido (params, set, defaults y, si
+// tiene presets, preset). onEdit: se llama con cada cambio (para guardar).
+function buildBody(spec, engine, onEdit) {
   const body = el('div', 'synth__body');
-  body.id = 'synth-body';
-  head.setAttribute('aria-controls', body.id);
-  root.append(head, body);
-
-  const setOpen = (open) => {
-    root.classList.toggle('is-open', open);
-    head.setAttribute('aria-expanded', String(open));
-  };
-  head.addEventListener('click', () => setOpen(!root.classList.contains('is-open')));
-  setOpen(matchMedia('(min-width: 64rem) and (pointer: fine)').matches);
-
-  // Para volver a pintar todos los controles (al cambiar de preset).
   const refreshers = [];
-  let preset = 'init';
+  const refresh = () => refreshers.forEach((f) => f());
+  let preset = spec.presets?.[0] ?? null;
 
-  // Los presets.
-  const presets = el('div', 'synth__section');
-  presets.append(el('h2', 'synth__title', 'preset'));
-  const presetRow = el('div', 'synth__choice');
-  for (const name of Object.keys(PRESETS)) {
-    const b = el('button', null, name);
-    b.type = 'button';
-    b.addEventListener('click', () => {
-      preset = name;
-      synth.preset(name);
-      refreshers.forEach((f) => f());
-    });
-    refreshers.push(() => b.classList.toggle('is-on', preset === name));
-    presetRow.append(b);
-  }
-  presets.append(presetRow);
-
-  // Random: una variación del preset elegido (synth.js, JITTER), dentro de los límites de
-  // cada deslizador. También con la R del teclado.
-  const limits = Object.fromEntries(SECTIONS.flatMap((s) => s.rows).filter((r) => !r.choice).map((r) => [r.key, r]));
-  const randomize = () => {
-    const base = synth.defaults(preset);
-    const spread = (amount) => (Math.random() * 2 - 1) * amount;
-    for (const [key, { mul, add, step }] of Object.entries(JITTER)) {
-      const from = base[key];
-      if (!from) {
-        synth.set(key, from);
-        continue;
-      }
-      let v = mul ? from * 2 ** spread(mul) : from + spread(add);
-      const { min, max, step: rowStep } = limits[key];
-      const by = step || rowStep;
-      if (by) v = Math.round(v / by) * by;
-      synth.set(key, Math.max(min, Math.min(max, v)));
+  // Los presets y random: una variación del preset elegido (JITTER de cada pista), dentro
+  // de los límites de cada deslizador.
+  if (spec.presets) {
+    const box = el('div', 'synth__section');
+    box.append(el('h2', 'synth__title', 'preset'));
+    const row = el('div', 'synth__choice');
+    for (const name of spec.presets) {
+      const b = el('button', null, name);
+      b.type = 'button';
+      b.addEventListener('click', () => {
+        preset = name;
+        engine.preset(name);
+        refresh();
+        onEdit();
+      });
+      refreshers.push(() => b.classList.toggle('is-on', preset === name));
+      row.append(b);
     }
-    refreshers.forEach((f) => f());
-  };
-  const random = el('button', 'synth__random', 'random');
-  random.type = 'button';
-  random.setAttribute('aria-label', 'Una variación al azar del preset (tecla R)');
-  random.addEventListener('click', randomize);
-  presets.append(random);
-  window.addEventListener('keydown', (e) => {
-    if (e.code !== 'KeyR' || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.target.closest?.('input, textarea, select')) return;
-    randomize();
-  });
-  body.append(presets);
+    box.append(row);
 
-  for (const section of SECTIONS) {
+    const limits = Object.fromEntries(spec.sections.flatMap((s) => s.rows).filter((r) => !r.choice).map((r) => [r.key, r]));
+    const random = el('button', 'synth__random', 'random');
+    random.type = 'button';
+    random.setAttribute('aria-label', 'Una variación al azar del preset (tecla R)');
+    random.addEventListener('click', () => body.randomize());
+    body.randomize = () => {
+      const base = engine.defaults(preset);
+      const spread = (amount) => (Math.random() * 2 - 1) * amount;
+      for (const [key, { mul, add, step }] of Object.entries(spec.jitter)) {
+        const from = base[key];
+        if (!from) {
+          engine.set(key, from);
+          continue;
+        }
+        let v = mul ? from * 2 ** spread(mul) : from + spread(add);
+        const { min, max, step: rowStep } = limits[key];
+        const by = step || rowStep;
+        if (by) v = Math.round(v / by) * by;
+        engine.set(key, Math.max(min, Math.min(max, v)));
+      }
+      refresh();
+      onEdit();
+    };
+    box.append(random);
+    body.append(box);
+  }
+
+  for (const section of spec.sections) {
     const box = el('div', 'synth__section');
     box.append(el('h2', 'synth__title', section.title));
     for (const row of section.rows) {
@@ -169,11 +209,12 @@ export function createPanel(root, synth) {
           const b = el('button', null, text);
           b.type = 'button';
           b.addEventListener('click', () => {
-            synth.set(row.key, value);
-            refreshers.forEach((f) => f());
+            engine.set(row.key, value);
+            refresh();
+            onEdit();
           });
           refreshers.push(() => {
-            const on = synth.params[row.key] === value;
+            const on = engine.params[row.key] === value;
             b.classList.toggle('is-on', on);
             b.setAttribute('aria-pressed', String(on));
           });
@@ -192,17 +233,19 @@ export function createPanel(root, synth) {
       const out = el('span', 'synth__value');
       input.addEventListener('input', () => {
         const v = toValue(row, Number(input.value));
-        synth.set(row.key, v);
+        engine.set(row.key, v);
         out.textContent = row.format(v);
+        onEdit();
       });
-      // Doble clic: vuelve al valor del preset.
+      // Doble clic: vuelve al valor del preset (o al de serie).
       input.addEventListener('dblclick', () => {
-        synth.set(row.key, { ...synth.defaults(preset) }[row.key]);
-        refreshers.forEach((f) => f());
+        engine.set(row.key, engine.defaults(preset)[row.key]);
+        refresh();
+        onEdit();
       });
       refreshers.push(() => {
-        input.value = toSlider(row, synth.params[row.key]);
-        out.textContent = row.format(synth.params[row.key]);
+        input.value = toSlider(row, engine.params[row.key]);
+        out.textContent = row.format(engine.params[row.key]);
       });
       line.append(name, input, out);
       box.append(line);
@@ -210,5 +253,49 @@ export function createPanel(root, synth) {
     body.append(box);
   }
 
-  refreshers.forEach((f) => f());
+  refresh();
+  return body;
+}
+
+// root: el <aside> del panel. engines: { synth, acid, drums }. onEdit: algo cambió.
+export function createPanel(root, engines, onEdit) {
+  // La cabecera: el nombre de la pista y plegar/desplegar.
+  const head = el('button', 'synth__head');
+  head.type = 'button';
+  head.innerHTML = '<span data-panel-name>synth</span><span class="synth__fold" aria-hidden="true"></span>';
+  const nameEl = head.querySelector('[data-panel-name]');
+  root.append(head);
+
+  const bodies = {};
+  for (const [track, spec] of Object.entries(PANELS)) {
+    bodies[track] = buildBody(spec, engines[track], onEdit);
+    bodies[track].id = `panel-${track}`;
+    bodies[track].hidden = true;
+    root.append(bodies[track]);
+  }
+
+  const setOpen = (open) => {
+    root.classList.toggle('is-open', open);
+    head.setAttribute('aria-expanded', String(open));
+  };
+  head.addEventListener('click', () => setOpen(!root.classList.contains('is-open')));
+  setOpen(matchMedia('(min-width: 64rem) and (pointer: fine)').matches);
+
+  let current = 'synth';
+  const show = (track) => {
+    current = track;
+    for (const [t, body] of Object.entries(bodies)) body.hidden = t !== track;
+    nameEl.textContent = track;
+    head.setAttribute('aria-controls', bodies[track].id);
+  };
+  show('synth');
+
+  // R: random en la pista elegida (si tiene presets).
+  window.addEventListener('keydown', (e) => {
+    if (e.code !== 'KeyR' || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target.closest?.('input, textarea, select')) return;
+    bodies[current].randomize?.();
+  });
+
+  return { show };
 }

@@ -34,7 +34,7 @@ body {
 
 body {
   display: grid;
-  grid-template-rows: auto 1fr auto auto;
+  grid-template-rows: auto 1fr auto auto auto;
   padding: 0 var(--side);
   box-sizing: border-box;
 }
@@ -147,7 +147,7 @@ body {
 /* Abajo: el pie, un bloque macizo del color de la letra, con la letra del de la página, y
    el nombre al revés. */
 .foot {
-  grid-row: 4;
+  grid-row: 5;
   position: relative;
   z-index: 1;
   margin-bottom: 1rem;
@@ -339,6 +339,10 @@ body {
   display: block;
 }
 
+.synth.is-open .synth__body[hidden] {
+  display: none;
+}
+
 .synth__section {
   padding: 0.5rem 0 0.4rem;
   border-top: 1px solid color-mix(in srgb, var(--page) 35%, transparent);
@@ -448,13 +452,13 @@ body {
    ========================================================================================= */
 
 .keys {
-  grid-row: 3;
+  grid-row: 4;
   position: relative;
   z-index: 1;
   display: flex;
   gap: 0.75rem;
   height: 4.5rem;
-  margin: 0.75rem 0;
+  margin: 0 0 0.75rem;
   font: 9px/1.5 ui-monospace, Menlo, Consolas, monospace;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -601,5 +605,207 @@ body {
 @media (hover: hover) {
   .synth__random:hover {
     border-style: solid;
+  }
+}
+
+/* Con la caja de ritmos, el nombre de cada instrumento en su tecla blanca, arriba. */
+.key__name {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: var(--ink);
+  pointer-events: none;
+}
+
+.key.is-down .key__name {
+  color: var(--page);
+}
+
+/* =========================================================================================
+   El secuenciador: la barra del transporte y la rejilla de 16 pasos
+   ========================================================================================= */
+
+.seq {
+  grid-row: 3;
+  position: relative;
+  z-index: 1;
+  margin: 0.75rem 0;
+  font: 9px/1.5 ui-monospace, Menlo, Consolas, monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.seq button,
+.seq input {
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+}
+
+.seq button {
+  margin: 0;
+  padding: 3px 7px;
+  border: 1px solid var(--ink);
+  background: color-mix(in srgb, var(--page) 55%, transparent);
+  cursor: pointer;
+}
+
+.seq button.is-on {
+  background: var(--ink);
+  color: var(--page);
+}
+
+@media (hover: hover) {
+  .seq button:not(.is-on):hover {
+    background: color-mix(in srgb, var(--ink) 20%, var(--page));
+  }
+}
+
+.seq button:focus-visible,
+.seq input:focus-visible {
+  outline: 1px dashed var(--ink);
+  outline-offset: 1px;
+}
+
+/* La barra: play, rec, tempo, swing, pistas y borrar, en una línea (en el móvil, en dos). */
+.seq__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-bottom: 6px;
+}
+
+.seq__play {
+  min-width: 4.2em;
+}
+
+/* Grabando: el rec, en rojo de piloto (en todos los modos). */
+.seq__rec.is-on {
+  background: #e5484d;
+  border-color: #e5484d;
+  color: #fff;
+}
+
+.seq__bpm,
+.seq__swing,
+.seq__tabs,
+.seq__edit {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.seq__bpm input {
+  width: 3.4em;
+  padding: 3px 2px;
+  border: 1px solid var(--ink);
+  background: none;
+  text-align: center;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.seq__bpm input::-webkit-inner-spin-button,
+.seq__bpm input::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.seq__unit {
+  opacity: 0.7;
+}
+
+.seq__swing input {
+  width: 5rem;
+  accent-color: var(--ink);
+}
+
+.seq__tabs {
+  margin-left: auto;
+}
+
+/* La rejilla: el nombre de la fila y 16 celdas, con aire cada cuatro. */
+.seq__row {
+  display: grid;
+  grid-template-columns: 3.2rem repeat(16, 1fr);
+  gap: 2px;
+  margin-bottom: 2px;
+}
+
+.seq__name {
+  align-self: center;
+  opacity: 0.75;
+}
+
+.seq .seq__cell {
+  min-width: 0;
+  height: 14px;
+  padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: clip;
+  border-color: color-mix(in srgb, var(--ink) 55%, transparent);
+}
+
+.seq__cell.is-beat:not(:nth-child(2)) {
+  margin-left: 4px;
+}
+
+.seq__row--notes .seq__cell {
+  height: 26px;
+  font-size: 8px;
+}
+
+.seq .seq__cell.is-tied {
+  background: color-mix(in srgb, var(--ink) 30%, var(--page));
+}
+
+.seq .seq__cell.is-on {
+  background: var(--ink);
+  color: var(--page);
+  border-color: var(--ink);
+}
+
+/* El paso marcado (ahí va lo que se grabe paso a paso). */
+.seq .seq__cell.is-cursor {
+  outline: 1px solid var(--ink);
+  outline-offset: 1px;
+}
+
+/* El paso que suena. */
+.seq .seq__cell.is-now {
+  box-shadow: inset 0 -3px 0 #e5484d;
+}
+
+.seq .seq__cell.is-on.is-now {
+  box-shadow: inset 0 -3px 0 var(--page);
+  filter: brightness(1.25);
+}
+
+@media (max-width: 47.99rem) {
+  .seq {
+    margin: 0.5rem 0;
+  }
+
+  .seq__tabs {
+    margin-left: 0;
+  }
+
+  .seq__row {
+    grid-template-columns: 2.6rem repeat(16, 1fr);
+    gap: 1px;
+  }
+
+  .seq__cell.is-beat:not(:nth-child(2)) {
+    margin-left: 2px;
+  }
+
+  .seq__row--notes .seq__cell {
+    font-size: 0;
   }
 }

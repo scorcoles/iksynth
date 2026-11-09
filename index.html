@@ -4,11 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>iksynth</title>
-    <meta name="description" content="iksynth: un sintetizador en el navegador, con su sonido dibujado en tiempo real. Un experimento de VERTIK." />
+    <meta name="description" content="iksynth: un sintetizador, un bajo ácido y una caja de ritmos en el navegador, con un secuenciador de 16 pasos y su sonido dibujado en tiempo real. Un experimento de VERTIK." />
   </head>
   <body>
     <!-- El sonido dibujado, a toda la pantalla; encima, arriba el símbolo y los botones, a
-         la derecha el panel del sinte, abajo el teclado y el pie. -->
+         la derecha el panel de la pista elegida, y abajo el secuenciador, el teclado y el
+         pie. -->
     <main class="panel">
       <canvas data-iksynth aria-label="iksynth: el sonido del sintetizador, dibujado mientras suena" role="img"></canvas>
     </main>
@@ -38,9 +39,12 @@
       </div>
     </header>
 
-    <!-- El panel del sinte (src/panel.js lo rellena): plegable; abierto de entrada solo en
-         escritorio. -->
-    <aside class="synth" data-panel aria-label="Controles del sintetizador"></aside>
+    <!-- El panel con el sonido de la pista elegida (src/panel.js lo rellena): plegable;
+         abierto de entrada solo en escritorio. -->
+    <aside class="synth" data-panel aria-label="Controles del sonido"></aside>
+
+    <!-- El secuenciador (src/seqview.js): el transporte, las pistas y los 16 pasos. -->
+    <section class="seq" data-seq aria-label="Secuenciador"></section>
 
     <!-- El teclado de la pantalla (src/keys.js): dos octavas escasas, con la octava a la
          izquierda. -->
@@ -49,7 +53,7 @@
     <footer class="foot">
       <p>
         <span class="foot__tag">iksynth</span>
-        <span class="foot__hint foot__hint--keys">Un sintetizador. Toca con el teclado: de la A a la Ñ, y Z y X cambian de octava</span><span class="foot__hint foot__hint--touch">Un sintetizador. Toca las teclas</span><span class="foot__sep">·</span><wbr /><span class="foot__modes"><button type="button" data-mode-prev aria-label="Visualización anterior">← Prev</button><span class="foot__sep">·</span><button type="button" data-mode-next aria-label="Visualización siguiente">Next →</button></span>
+        <span class="foot__hint foot__hint--keys">Toca con el teclado (de la A a la Ñ; Z y X, la octava). Espacio, play; 1, 2 y 3, las pistas; rec para grabar</span><span class="foot__hint foot__hint--touch">Toca las teclas; rec para grabar en los 16 pasos</span><span class="foot__sep">·</span><wbr /><span class="foot__modes"><button type="button" data-mode-prev aria-label="Visualización anterior">← Prev</button><span class="foot__sep">·</span><button type="button" data-mode-next aria-label="Visualización siguiente">Next →</button></span>
       </p>
     </footer>
 
