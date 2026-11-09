@@ -1044,66 +1044,225 @@ html[data-mode='unit'] .synth__head span:first-child {
   color: #fff;
 }
 
+/* La placa se reparte por su ancho (container queries): ancha, en una retícula fija por
+   pista; estrecha, las secciones en fila y saltando de línea. */
+html[data-mode='unit'] .synth {
+  container-type: inline-size;
+}
+
+html[data-mode='unit'] .synth.is-open {
+  display: flex;
+  flex-direction: column;
+}
+
 html[data-mode='unit'] .synth.is-open .synth__body:not([hidden]) {
+  flex: 1 0 auto;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: 8px;
-  padding: 0.3rem 0.9rem 0.9rem;
+  gap: 14px 18px;
+  padding: 0.3rem 1rem 1rem;
 }
 
-/* Cada sección, un recuadro impreso en la placa, con sus knobs en fila. */
+/* Los iconos serigrafiados: solo en unit. */
+.synth__icon {
+  display: none;
+}
+
+html[data-mode='unit'] .synth__icon {
+  display: inline-flex;
+}
+
+html[data-mode='unit'] .synth__icon svg {
+  width: 16px;
+  height: 12px;
+}
+
+/* Cada sección: sin caja; su icono, su nombre y una raya impresa hasta el final, y debajo
+   sus interruptores y sus knobs, repartidos. */
 html[data-mode='unit'] .synth__section {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 4px 2px;
-  padding: 6px 8px 8px;
-  border: 1px solid #b3b3ad;
-  border-radius: 6px;
+  align-content: center;
+  justify-content: space-around;
+  gap: 8px 2px;
+  padding: 0;
+  border: 0;
 }
 
 html[data-mode='unit'] .synth__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   flex-basis: 100%;
-  margin: 0 0 2px;
-  opacity: 0.5;
+  align-self: flex-start;
+  margin: 0;
+  opacity: 0.75;
+  font-weight: 700;
+}
+
+html[data-mode='unit'] .synth__title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  margin-left: 2px;
+  background: currentColor;
+  opacity: 0.35;
 }
 
 html[data-mode='unit'] .synth__choice {
   flex-basis: 100%;
-  gap: 4px;
+  flex-wrap: nowrap;
+  gap: 5px;
+  margin: 0;
 }
 
+/* Los interruptores: teclas claras con un led cuadrado; el elegido, hundido y con el led
+   encendido. Random, de pulsar y soltar: el led se enciende mientras se pulsa. */
 html[data-mode='unit'] .synth__choice button,
 html[data-mode='unit'] .synth__random {
-  padding: 5px 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  height: 30px;
+  padding: 0 9px;
   border: 0;
   border-radius: 3px;
   background: var(--cap);
   color: var(--page);
-  box-shadow: 0 1.5px 0 var(--cap-edge);
+  box-shadow:
+    0 2px 0 var(--cap-edge),
+    0 3px 4px rgb(0 0 0 / 0.12);
+  transition: transform 50ms ease, box-shadow 50ms ease;
 }
 
-html[data-mode='unit'] .synth__random {
-  flex-basis: 100%;
-  margin: 2px 0 0;
+html[data-mode='unit'] .synth__choice button::before,
+html[data-mode='unit'] .synth__random::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: #a3a39d;
+  box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.25);
+}
+
+html[data-mode='unit'] .synth__choice button .synth__icon svg {
+  width: 20px;
+  height: 10px;
 }
 
 html[data-mode='unit'] .synth__choice button.is-on,
 html[data-mode='unit'] .synth__random:active {
-  background: var(--page);
-  color: var(--cap);
-  box-shadow: 0 1.5px 0 #000;
+  background: #e9e9e4;
+  color: var(--page);
+  transform: translateY(1.5px);
+  box-shadow: 0 0.5px 0 var(--cap-edge);
+}
+
+html[data-mode='unit'] .synth__choice button.is-on::before,
+html[data-mode='unit'] .synth__random:active::before {
+  background: var(--orange);
+  box-shadow:
+    0 0 4px var(--orange),
+    0 0 9px rgb(255 91 26 / 0.55);
+}
+
+html[data-mode='unit'] .synth__random {
+  flex-basis: 100%;
+  margin: 0;
 }
 
 @media (hover: hover) {
-  html[data-mode='unit'] .synth__choice button:not(.is-on):hover {
-    background: #fafaf7;
-  }
-
+  html[data-mode='unit'] .synth__choice button:not(.is-on):hover,
   html[data-mode='unit'] .synth__random:hover {
     border: 0;
     background: #fafaf7;
+  }
+}
+
+/* La retícula, con la placa ancha: 12 columnas; cada sección, tantas como controles. */
+@container (min-width: 600px) {
+  html[data-mode='unit'] .synth.is-open .synth__body:not([hidden]) {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    align-content: space-evenly;
+    gap: 18px 26px;
+  }
+
+  html[data-mode='unit'] .synth__body[data-kind='synth'] {
+    grid-template-areas:
+      'preset preset preset preset preset preset preset preset preset preset preset preset'
+      'osc osc osc osc amp amp amp amp filter filter filter filter'
+      'lfo lfo lfo fx fx fx fx fx fx fx out out';
+    grid-template-rows: auto auto auto;
+  }
+
+  html[data-mode='unit'] .synth__body[data-kind='acid'] {
+    grid-template-areas:
+      'preset preset preset preset preset preset preset preset preset preset preset preset'
+      'voice voice voice voice voice voice fx fx fx fx out out';
+    grid-template-rows: auto auto;
+  }
+
+  html[data-mode='unit'] .synth__body[data-kind='drums'] {
+    grid-template-areas:
+      'kick kick kick snare snare snare clap clap clap hat hat hat'
+      'open open open tom tom tom cow cow cow out out out';
+    grid-template-rows: auto auto;
+  }
+
+  html[data-mode='unit'] .synth__section {
+    align-content: flex-start;
+  }
+
+  html[data-mode='unit'] .synth__title {
+    margin-bottom: 4px;
+  }
+
+  html[data-mode='unit'] .synth__section[data-section='preset'] { grid-area: preset; }
+  html[data-mode='unit'] .synth__section[data-section='osc'] { grid-area: osc; }
+  html[data-mode='unit'] .synth__section[data-section='amp'] { grid-area: amp; }
+  html[data-mode='unit'] .synth__section[data-section='filter'] { grid-area: filter; }
+  html[data-mode='unit'] .synth__section[data-section='lfo'] { grid-area: lfo; }
+  html[data-mode='unit'] .synth__section[data-section='fx'] { grid-area: fx; }
+  html[data-mode='unit'] .synth__section[data-section='out'] { grid-area: out; }
+  html[data-mode='unit'] .synth__section[data-section='voice'] { grid-area: voice; }
+  html[data-mode='unit'] .synth__section[data-section='kick'] { grid-area: kick; }
+  html[data-mode='unit'] .synth__section[data-section='snare'] { grid-area: snare; }
+  html[data-mode='unit'] .synth__section[data-section='clap'] { grid-area: clap; }
+  html[data-mode='unit'] .synth__section[data-section='hat'] { grid-area: hat; }
+  html[data-mode='unit'] .synth__section[data-section='open'] { grid-area: open; }
+  html[data-mode='unit'] .synth__section[data-section='tom'] { grid-area: tom; }
+  html[data-mode='unit'] .synth__section[data-section='cow'] { grid-area: cow; }
+
+  /* Los presets, en una tira: los interruptores y random al final, aparte. */
+  html[data-mode='unit'] .synth__section[data-section='preset'] {
+    flex-wrap: nowrap;
+    gap: 10px;
+  }
+
+  html[data-mode='unit'] .synth__section[data-section='preset'] .synth__title {
+    flex: 0 0 auto;
+    margin: 0;
+  }
+
+  html[data-mode='unit'] .synth__section[data-section='preset'] .synth__title::after {
+    display: none;
+  }
+
+  html[data-mode='unit'] .synth__section[data-section='preset'] .synth__choice {
+    flex: 1 1 auto;
+  }
+
+  html[data-mode='unit'] .synth__section[data-section='preset'] .synth__choice button {
+    flex: 1 1 0;
+  }
+
+  html[data-mode='unit'] .synth__random {
+    flex: 0 0 7.5rem;
   }
 }
 

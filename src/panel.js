@@ -142,6 +142,50 @@ const el = (tag, cls, text) => {
   return n;
 };
 
+// Los iconos «serigrafiados» (solo se ven en el modo unit): uno por sección y por opción.
+const svg = (d, w = 16) =>
+  `<svg viewBox="0 0 ${w} 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+const ICONS = {
+  // Secciones.
+  preset: svg('M2 2h4v3H2zM10 2h4v3h-4zM2 7h4v3H2zM10 7h4v3h-4z'),
+  osc: svg('M1 6C3.5 1 5.5 1 8 6S12.5 11 15 6'),
+  amp: svg('M1 11 4 1l3 4h4l3 6'),
+  filter: svg('M1 4h7c2.5 0 3-2 4-2s1.5 5 3 9'),
+  lfo: svg('M1 9 4.5 3 8 9l3.5-6L15 9'),
+  fx: svg('M3 2q4 4 0 8M7 1q5 5 0 10M11 .5q6 5.5 0 11'),
+  out: svg('M1 4h3l4-3v10L4 8H1zM11 3.5q2 2.5 0 5M13 1.5q3.5 4.5 0 9'),
+  voice: svg('M1 10 7 2v8l6-8v8'),
+  kick: svg('M8 1a5 5 0 1 0 0 10A5 5 0 1 0 8 1z'),
+  snare: svg('M2 3h12v6H2zM2 3l12 6'),
+  clap: svg('M4 11 6 3M8 11V2M12 11l-2-8'),
+  hat: svg('M2 4h12M4 2h8M8 4v7'),
+  open: svg('M2 5l12-2M2 2 14 0M8 4v7'),
+  tom: svg('M3 3h10v7H3zM3 3q5 2 10 0'),
+  cow: svg('M5 1h6l3 10H2z'),
+  // Opciones.
+  sine: svg('M1 6C4 0 8 0 12 6s8 6 11 0', 24),
+  triangle: svg('M1 10 6.5 2 12 10l5.5-8L23 10', 24),
+  sawtooth: svg('M1 10 11 2v8l10-8v8', 24),
+  square: svg('M1 10V2h7v8h8V2h7', 24),
+  pitch: svg('M8 1v10M5 4l3-3 3 3M5 8l3 3 3-3'),
+  ampTarget: svg('M1 11 15 1v10z'),
+};
+const OPTION_ICONS = { sine: 'sine', triangle: 'triangle', sawtooth: 'sawtooth', square: 'square', filter: 'filter', pitch: 'pitch', amp: 'ampTarget' };
+const iconEl = (name) => {
+  const i = document.createElement('span');
+  i.className = 'synth__icon';
+  i.innerHTML = ICONS[name] || '';
+  return i;
+};
+// El título de una sección: su icono y su nombre.
+const titleEl = (name) => {
+  const h = document.createElement('h2');
+  h.className = 'synth__title';
+  if (ICONS[name]) h.append(iconEl(name));
+  h.append(document.createTextNode(name));
+  return h;
+};
+
 // Un cuerpo del panel: el de una pista. engine: su sonido (params, set, defaults y, si
 // tiene presets, preset). onEdit: se llama con cada cambio (para guardar).
 function buildBody(spec, engine, onEdit) {
@@ -154,7 +198,8 @@ function buildBody(spec, engine, onEdit) {
   // de los límites de cada deslizador.
   if (spec.presets) {
     const box = el('div', 'synth__section');
-    box.append(el('h2', 'synth__title', 'preset'));
+    box.dataset.section = 'preset';
+    box.append(titleEl('preset'));
     const row = el('div', 'synth__choice');
     for (const name of spec.presets) {
       const b = el('button', null, name);
@@ -199,15 +244,18 @@ function buildBody(spec, engine, onEdit) {
 
   for (const section of spec.sections) {
     const box = el('div', 'synth__section');
-    box.append(el('h2', 'synth__title', section.title));
+    box.dataset.section = section.title;
+    box.append(titleEl(section.title));
     for (const row of section.rows) {
       if (row.choice) {
         const wrap = el('div', 'synth__choice');
         wrap.setAttribute('role', 'group');
         wrap.setAttribute('aria-label', row.key);
         for (const [value, text] of row.choice) {
-          const b = el('button', null, text);
+          const b = el('button');
           b.type = 'button';
+          if (OPTION_ICONS[value]) b.append(iconEl(OPTION_ICONS[value]));
+          b.append(document.createTextNode(text));
           b.addEventListener('click', () => {
             engine.set(row.key, value);
             refresh();
@@ -326,6 +374,7 @@ export function createPanel(root, onEdit) {
   return {
     add(track, kind, engine) {
       const body = buildBody(PANELS[kind], engine, onEdit);
+      body.dataset.kind = kind;
       body.id = `panel-${kind}-${serial++}`;
       body.hidden = true;
       root.append(body);
