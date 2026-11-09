@@ -80,6 +80,33 @@ export const PRESETS = {
   },
 };
 
+// El botón «random»: una variación del preset elegido, siempre desde sus valores (no desde
+// la variación anterior, para que no se vaya alejando). «mul»: cuántas octavas arriba o
+// abajo, como mucho, para tiempos y frecuencias (1 = de la mitad al doble); «add»: cuánto
+// se suma o se resta, como mucho. Lo que el preset tiene a cero se queda a cero (un pluck
+// sigue sin sustain y un bass sin LFO ni delay). La onda, el destino del LFO y el volumen
+// no se tocan.
+export const JITTER = {
+  unison: { add: 2, step: 1 },
+  spread: { mul: 0.8 },
+  attack: { mul: 1 },
+  decay: { mul: 0.8 },
+  sustain: { add: 0.2 },
+  release: { mul: 0.8 },
+  cutoff: { mul: 1.2 },
+  resonance: { mul: 0.9 },
+  envAmount: { add: 1.2 },
+  envDecay: { mul: 0.9 },
+  lfoRate: { mul: 1 },
+  lfoDepth: { add: 0.2 },
+  chorus: { add: 0.2 },
+  delay: { add: 0.15 },
+  delayTime: { mul: 0.7 },
+  feedback: { add: 0.15 },
+  reverb: { add: 0.15 },
+  size: { mul: 0.8 },
+};
+
 // Qué parámetros toca cada grupo: al cambiar uno, solo se reaplica su grupo (cambiar el
 // oscilador de las voces mientras suenan, por ejemplo, solo cuando cambia el oscilador).
 const GROUPS = {

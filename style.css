@@ -582,3 +582,24 @@ body {
     width: 100%;
   }
 }
+
+/* Random: a todo el ancho, debajo de los presets, macizo al pulsarlo. */
+.synth__random {
+  display: block;
+  width: 100%;
+  margin: 2px 0 0.25rem;
+  padding: 3px 6px;
+  border: 1px dashed var(--page);
+  background: none;
+}
+
+.synth__random:active {
+  background: var(--page);
+  color: var(--ink);
+}
+
+@media (hover: hover) {
+  .synth__random:hover {
+    border-style: solid;
+  }
+}

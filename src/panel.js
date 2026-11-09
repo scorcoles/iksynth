@@ -7,7 +7,7 @@
 // abarcan mucho (tiempos, frecuencias) van en escala logarítmica: la mitad del recorrido
 // es la media geométrica, no la aritmética.
 
-import { PRESETS } from './synth.js';
+import { PRESETS, JITTER } from './synth.js';
 
 const hz = (v) => (v >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 1 : 2)}k` : `${Math.round(v)}`);
 const sec = (v) => (v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed(v < 10 ? 2 : 1)}s`);
@@ -123,6 +123,37 @@ export function createPanel(root, synth) {
     presetRow.append(b);
   }
   presets.append(presetRow);
+
+  // Random: una variación del preset elegido (synth.js, JITTER), dentro de los límites de
+  // cada deslizador. También con la R del teclado.
+  const limits = Object.fromEntries(SECTIONS.flatMap((s) => s.rows).filter((r) => !r.choice).map((r) => [r.key, r]));
+  const randomize = () => {
+    const base = synth.defaults(preset);
+    const spread = (amount) => (Math.random() * 2 - 1) * amount;
+    for (const [key, { mul, add, step }] of Object.entries(JITTER)) {
+      const from = base[key];
+      if (!from) {
+        synth.set(key, from);
+        continue;
+      }
+      let v = mul ? from * 2 ** spread(mul) : from + spread(add);
+      const { min, max, step: rowStep } = limits[key];
+      const by = step || rowStep;
+      if (by) v = Math.round(v / by) * by;
+      synth.set(key, Math.max(min, Math.min(max, v)));
+    }
+    refreshers.forEach((f) => f());
+  };
+  const random = el('button', 'synth__random', 'random');
+  random.type = 'button';
+  random.setAttribute('aria-label', 'Una variación al azar del preset (tecla R)');
+  random.addEventListener('click', randomize);
+  presets.append(random);
+  window.addEventListener('keydown', (e) => {
+    if (e.code !== 'KeyR' || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target.closest?.('input, textarea, select')) return;
+    randomize();
+  });
   body.append(presets);
 
   for (const section of SECTIONS) {
