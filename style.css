@@ -1,0 +1,584 @@
+/* =========================================================================================
+   iksynth: el sonido dibujado a toda la pantalla y, encima, el símbolo, los botones, el
+   panel del sinte, el teclado y el pie
+   =========================================================================================
+   Un juego de colores por modo (main.js pone data-mode en <html>): ridge, naranja sobre
+   negro; orb, azul hielo sobre negro azulado; y wire, gris oscuro sobre papel. --page es
+   el color de la página y --ink el de la letra; el pie y el panel son bloques del color de
+   la letra, con la letra del color de la página. */
+
+:root {
+  --page: #0c0b0a;
+  --ink: #ff5b26;
+  --side: 1rem;
+}
+
+html[data-mode='orb'] {
+  --page: #070a12;
+  --ink: #a9c9ff;
+}
+
+html[data-mode='wire'] {
+  --page: #eeeeee;
+  --ink: #333333;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--page);
+  color: var(--ink);
+  overflow: hidden;
+}
+
+body {
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  padding: 0 var(--side);
+  box-sizing: border-box;
+}
+
+/* Los puntos: a toda la pantalla, por debajo de todo. */
+.panel {
+  position: fixed;
+  inset: 0;
+  margin: 0;
+}
+
+.panel canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+/* Arriba: el símbolo y los botones. Deja pasar el ratón y el dedo a los puntos, salvo en
+   ellos. */
+.top {
+  grid-row: 1;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  height: 4.5rem;
+  pointer-events: none;
+}
+
+.brand,
+.tools {
+  pointer-events: auto;
+}
+
+.brand {
+  color: inherit;
+  font: 700 1.25rem/1 ui-monospace, Menlo, Consolas, monospace;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+}
+
+/* Arriba a la derecha: el sonido y compartir, algo apagados hasta que pasas por encima. */
+.tools {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.sound,
+.share {
+  display: block;
+  margin: 0;
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: inherit;
+  line-height: 0;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 200ms ease;
+}
+
+.share[hidden] {
+  display: none;
+}
+
+/* Solo con ratón: en el móvil, al tocar, se quedaría «con el ratón encima». */
+@media (hover: hover) {
+  .sound:hover,
+  .share:hover {
+    opacity: 1;
+  }
+}
+
+.sound:focus-visible,
+.share:focus-visible {
+  opacity: 1;
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* Sonando, del todo; con ondas si suena, con una equis si no. */
+.sound.is-on {
+  opacity: 1;
+}
+
+.sound__on,
+.sound.is-on .sound__off {
+  display: none;
+}
+
+.sound.is-on .sound__on {
+  display: inline;
+}
+
+.share svg {
+  width: 20px;
+  height: 20px;
+}
+
+.sound svg {
+  width: 26px;
+  height: 26px;
+  margin: -3px;
+}
+
+/* Abajo: el pie, un bloque macizo del color de la letra, con la letra del de la página, y
+   el nombre al revés. */
+.foot {
+  grid-row: 4;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 1rem;
+  background: var(--ink);
+  color: var(--page);
+}
+
+.foot p {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  font: 9px/1.5 ui-monospace, Menlo, Consolas, monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.foot__tag {
+  display: inline-block;
+  margin-right: 0.6em;
+  padding: 0 0.4em;
+  line-height: inherit;
+  background: var(--page);
+  color: var(--ink);
+}
+
+.foot__sep {
+  margin: 0 0.6em;
+}
+
+/* Prev y Next: botones que parecen texto del pie (como en vortik, vertikis y sunburst). */
+.foot__modes {
+  white-space: nowrap;
+}
+
+.foot__modes button {
+  /* Más zona para el dedo que lo que se ve. */
+  margin: -8px 0;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.foot__modes button:hover,
+.foot__modes button:focus-visible {
+  text-decoration: underline;
+}
+
+@media (max-width: 47.99rem) {
+  :root {
+    --side: 0.75rem;
+  }
+
+  .top {
+    height: 4rem;
+  }
+
+}
+
+/* En el móvil (y en pantallas táctiles), como en los otros experimentos: «Prev» y «Next» en
+   su propia línea, a todo el ancho (uno a cada lado), con más aire para el dedo; el «·»
+   que los separaba del resto sobra. */
+@media (max-width: 63.99rem), (pointer: coarse) {
+  .foot__modes {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+  }
+
+  .foot__modes .foot__sep {
+    display: none;
+  }
+
+  .foot__modes button {
+    margin: -10px 0;
+    padding: 10px 6px;
+  }
+
+  .foot__modes button:first-child {
+    margin-left: -6px;
+  }
+
+  .foot__modes button:last-child {
+    margin-right: -6px;
+  }
+
+  .foot__sep:has(+ wbr + .foot__modes) {
+    display: none;
+  }
+}
+
+/* En escritorio, «Prev · Next» alineado a la derecha del pie; el «·» que los separaba del
+   resto sobra. */
+@media (min-width: 64rem) and (pointer: fine) {
+  .foot__modes {
+    float: right;
+    margin-left: 1.2em;
+  }
+
+  .foot__sep:has(+ wbr + .foot__modes) {
+    display: none;
+  }
+}
+
+/* Las pistas del pie: con teclado (escritorio), cómo se toca con él; en pantallas
+   táctiles, que se tocan las teclas. */
+.foot__hint--touch {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .foot__hint--keys {
+    display: none;
+  }
+
+  .foot__hint--touch {
+    display: inline;
+  }
+}
+
+/* =========================================================================================
+   El panel del sinte: arriba a la derecha, un bloque del color de la tinta, plegable
+   ========================================================================================= */
+
+.synth {
+  grid-row: 2;
+  position: relative;
+  z-index: 2;
+  justify-self: end;
+  align-self: start;
+  width: 15.5rem;
+  max-width: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  background: var(--ink);
+  color: var(--page);
+  font: 9px/1.5 ui-monospace, Menlo, Consolas, monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.synth button {
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.synth__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+
+.synth__head span:first-child {
+  padding: 0 0.4em;
+  background: var(--page);
+  color: var(--ink);
+}
+
+.synth__fold::before {
+  content: '+';
+  font-size: 12px;
+}
+
+.synth.is-open .synth__fold::before {
+  content: '−';
+}
+
+.synth__body {
+  display: none;
+  padding: 0 0.75rem 0.6rem;
+}
+
+.synth.is-open .synth__body {
+  display: block;
+}
+
+.synth__section {
+  padding: 0.5rem 0 0.4rem;
+  border-top: 1px solid color-mix(in srgb, var(--page) 35%, transparent);
+}
+
+.synth__title {
+  margin: 0 0 0.3rem;
+  font: inherit;
+  opacity: 0.6;
+}
+
+/* Una fila: el nombre, el deslizador y el valor. */
+.synth__row {
+  display: grid;
+  grid-template-columns: 6.4em 1fr 4.6em;
+  align-items: center;
+  gap: 0.6em;
+  min-height: 20px;
+}
+
+.synth__value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* El deslizador: una línea fina y un bloque macizo, del color de la página. */
+.synth input[type='range'] {
+  appearance: none;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  background: none;
+  cursor: ew-resize;
+}
+
+.synth input[type='range']::-webkit-slider-runnable-track {
+  height: 1px;
+  background: var(--page);
+}
+
+.synth input[type='range']::-moz-range-track {
+  height: 1px;
+  background: var(--page);
+}
+
+.synth input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 7px;
+  height: 13px;
+  margin-top: -6px;
+  border: 0;
+  border-radius: 0;
+  background: var(--page);
+}
+
+.synth input[type='range']::-moz-range-thumb {
+  width: 7px;
+  height: 13px;
+  border: 0;
+  border-radius: 0;
+  background: var(--page);
+}
+
+.synth input[type='range']:focus-visible {
+  outline: 1px dashed var(--page);
+  outline-offset: 1px;
+}
+
+/* Elegir uno: botones en fila, con borde; el elegido, macizo. */
+.synth__choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 0.25rem;
+}
+
+.synth__choice button {
+  flex: 1 0 auto;
+  margin: 0;
+  padding: 3px 6px;
+  border: 1px solid var(--page);
+  background: none;
+}
+
+.synth__choice button.is-on {
+  background: var(--page);
+  color: var(--ink);
+}
+
+@media (hover: hover) {
+  .synth__choice button:hover {
+    background: color-mix(in srgb, var(--page) 20%, transparent);
+  }
+
+  .synth__choice button.is-on:hover {
+    background: var(--page);
+  }
+}
+
+.synth button:focus-visible {
+  outline: 1px dashed var(--page);
+  outline-offset: 1px;
+}
+
+/* =========================================================================================
+   El teclado de la pantalla: encima del pie, la octava a la izquierda y las teclas
+   ========================================================================================= */
+
+.keys {
+  grid-row: 3;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 0.75rem;
+  height: 4.5rem;
+  margin: 0.75rem 0;
+  font: 9px/1.5 ui-monospace, Menlo, Consolas, monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.keys__octave {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  width: 3.2rem;
+}
+
+.keys__octave button {
+  width: 100%;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--ink);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.keys__octave span {
+  padding: 4px 0;
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
+  .keys__octave button:hover {
+    background: color-mix(in srgb, var(--ink) 20%, transparent);
+  }
+}
+
+.keys__board {
+  position: relative;
+  flex: 1;
+  display: flex;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Las blancas: marcos de tinta, transparentes (se ve el dibujo detrás); pulsadas, macizas. */
+.key {
+  position: relative;
+  flex: 1;
+  border: 1px solid var(--ink);
+  border-right-width: 0;
+  background: color-mix(in srgb, var(--page) 55%, transparent);
+  cursor: pointer;
+}
+
+.key:nth-child(10) {
+  border-right-width: 1px;
+}
+
+.key.is-down {
+  background: var(--ink);
+}
+
+/* Las negras: más cortas y estrechas, macizas, a caballo entre dos blancas; pulsadas, del
+   color de la página. */
+.key--black {
+  position: absolute;
+  top: 0;
+  width: calc(100% / var(--whites) * 0.6);
+  height: 58%;
+  transform: translateX(-50%);
+  border: 1px solid var(--ink);
+  background: var(--ink);
+}
+
+.key--black.is-down {
+  background: var(--page);
+}
+
+.key__label {
+  position: absolute;
+  bottom: 3px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: var(--ink);
+  pointer-events: none;
+}
+
+.key.is-down .key__label {
+  color: var(--page);
+}
+
+.key--black .key__label {
+  color: var(--page);
+}
+
+.key--black.is-down .key__label {
+  color: var(--ink);
+}
+
+/* En pantallas táctiles, las letras sobran y las teclas, más altas. */
+@media (pointer: coarse) {
+  .key__label {
+    display: none;
+  }
+
+  .keys {
+    height: 6rem;
+  }
+}
+
+@media (max-width: 47.99rem) {
+  .keys {
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+  }
+
+  .keys__octave {
+    width: 2.6rem;
+  }
+
+  .synth {
+    width: 100%;
+  }
+}

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>iksynth</title>
+    <meta name="description" content="iksynth: un sintetizador en el navegador, con su sonido dibujado en tiempo real. Un experimento de VERTIK." />
+  </head>
+  <body>
+    <!-- El sonido dibujado, a toda la pantalla; encima, arriba el símbolo y los botones, a
+         la derecha el panel del sinte, abajo el teclado y el pie. -->
+    <main class="panel">
+      <canvas data-iksynth aria-label="iksynth: el sonido del sintetizador, dibujado mientras suena" role="img"></canvas>
+    </main>
+
+    <header class="top">
+      <!-- En la web de VERTIK, aquí va su símbolo. -->
+      <a class="brand" href="https://www.vertik.net/">VERTIK</a>
+      <!-- Arriba a la derecha: el sonido, apagado de entrada (se enciende solo con la
+           primera nota), y compartir una foto (src/share.js; si el navegador no sabe
+           compartir imágenes, no aparece). -->
+      <div class="tools">
+        <button type="button" class="sound" data-sound aria-pressed="false" aria-label="Encender el sonido">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 9h3.5L12 4.5v15L6.5 15H3z" fill="currentColor" stroke="none" />
+            <path class="sound__on" d="M15.5 9a4.2 4.2 0 0 1 0 6M18.3 6.3a8 8 0 0 1 0 11.4" />
+            <path class="sound__off" d="M15.8 9.2l5.2 5.6M21 9.2l-5.2 5.6" />
+          </svg>
+        </button>
+        <button type="button" class="share" data-share hidden aria-label="Compartir una imagen">
+          <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <path d="M8.6 10.5 15.4 6.5M8.6 13.5l6.8 4" fill="none" />
+            <circle cx="18" cy="5" r="3" stroke="none" />
+            <circle cx="6" cy="12" r="3" stroke="none" />
+            <circle cx="18" cy="19" r="3" stroke="none" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- El panel del sinte (src/panel.js lo rellena): plegable; abierto de entrada solo en
+         escritorio. -->
+    <aside class="synth" data-panel aria-label="Controles del sintetizador"></aside>
+
+    <!-- El teclado de la pantalla (src/keys.js): dos octavas escasas, con la octava a la
+         izquierda. -->
+    <section class="keys" data-keys aria-label="Teclado"></section>
+
+    <footer class="foot">
+      <p>
+        <span class="foot__tag">iksynth</span>
+        <span class="foot__hint foot__hint--keys">Un sintetizador. Toca con el teclado: de la A a la Ñ, y Z y X cambian de octava</span><span class="foot__hint foot__hint--touch">Un sintetizador. Toca las teclas</span><span class="foot__sep">·</span><wbr /><span class="foot__modes"><button type="button" data-mode-prev aria-label="Visualización anterior">← Prev</button><span class="foot__sep">·</span><button type="button" data-mode-next aria-label="Visualización siguiente">Next →</button></span>
+      </p>
+    </footer>
+
+    <!-- Un módulo: Vite sigue sus «import» y sirve Three.js y Tone.js desde node_modules. -->
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

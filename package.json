@@ -1,0 +1,20 @@
+{
+  "name": "iksynth",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Un sintetizador en el navegador, con su sonido dibujado en tiempo real. Un experimento de VERTIK.",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.187.0",
+    "tone": "^15.1.22"
+  },
+  "devDependencies": {
+    "vite": "^8.3.6"
+  }
+}
