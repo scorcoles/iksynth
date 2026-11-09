@@ -8,7 +8,7 @@ Un sintetizador en el navegador, con su sonido dibujado en tiempo real. Un exper
 - Seis presets (init, pad, bass, pluck, lead, drone) y el panel de la derecha para cambiarlo todo. Doble clic en un deslizador: vuelve al valor del preset.
 - **Random** (o la tecla R): una variación al azar del preset elegido, siempre desde sus valores. Tiempos y frecuencias, de la mitad al doble más o menos; mezclas y cantidades, un poco arriba o abajo. Lo que el preset tiene a cero se queda a cero, y la onda, el destino del LFO y el volumen no cambian.
 - El sonido se enciende solo con la primera nota; el altavoz de arriba lo apaga y lo enciende. Sin el foco de la ventana, se calla.
-- Tres modos (← Prev · Next → en el pie, las flechas o `#orb`, `#wire`): **ridge**, el espectro como una cordillera que se aleja (graves a la izquierda, agudos a la derecha), naranja sobre negro; **orb**, una esfera de puntos que respira con el sonido (los graves empujan el ecuador, los agudos los polos, y la onda la riza alrededor), azul hielo sobre negro; **wire**, la misma esfera en malla gris sobre papel.
+- Tres modos (← Prev · Next → en el pie, las flechas o `#orb`, `#wire`): **ridge**, el espectro como una cordillera que se aleja (graves a la izquierda, agudos a la derecha), lima ácida sobre grafito; **orb**, una esfera de puntos que respira con el sonido (los graves empujan el ecuador, los agudos los polos, y la onda la riza alrededor), azul hielo sobre negro; **wire**, la misma esfera en malla gris sobre papel.
 
 ## Cómo está hecho
 
