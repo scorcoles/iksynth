@@ -16,6 +16,7 @@ Demo: [scorcoles.github.io/iksynth](https://scorcoles.github.io/iksynth/) · En 
 - **rec** en marcha: lo que se toca se cuadra al paso más cercano (en el synth, con su largo al soltar). **rec** parado: paso a paso; cada nota o acorde va al paso marcado y, al soltar, pasa al siguiente.
 - En la rejilla: tocar un paso de notas lo marca; accent y slide se encienden y apagan tocándolos. En la caja, cada toque sube la intensidad del paso (baja, media, alta y, otra vez, apagado), y se ve en lo relleno que está; lo grabado tocando entra en media. Con el botón derecho, la vía rápida: se borra lo que haya en ese paso (en la fila de notas, el paso entero; en accent o slide, se apaga; en la caja, solo ese golpe). **del** (o retroceso) borra el paso marcado; **clear**, dos veces, la pista entera.
 - Espacio, play y stop. Tempo (de 40 a 240 bpm; con mayúsculas, de diez en diez) y swing.
+- **Demos**: cinco canciones de ejemplo, de estilos distintos: trip-hop, acid house, techno, synthwave (con dos pistas de synth) y lo-fi. **demo →** pasa a la siguiente (si estaba sonando, sigue); **new** lo deja todo vacío, con los sonidos de serie. Si hay cambios que se perderían, piden un segundo toque. También por la dirección: `#demo1` … `#demo5`.
 - Los sonidos, las secuencias y la pista elegida se guardan en el navegador.
 - **Compartir** (arriba a la derecha) no comparte una foto: comparte la canción. Hace un enlace con todo (las secuencias, el tempo, el swing, el sonido de todas las pistas y el modo) comprimido en la dirección (`?song=…`); abre el menú de compartir del sistema o, donde no lo hay, copia el enlace. Quien lo abre recibe la canción cargada, lista para darle a play.
 
@@ -40,6 +41,7 @@ Demo: [scorcoles.github.io/iksynth](https://scorcoles.github.io/iksynth/) · En 
 | `src/visual.js` | Lo que se ve: la esfera de puntos y su malla. |
 | `src/panel.js` | El panel con el sonido de cada pista. |
 | `src/keys.js` | Tocar: el teclado del ordenador y el de la pantalla. Un teclado MIDI solo tendría que llamar a `noteOn` y `noteOff`. |
+| `src/demos.js` | Las demos: canciones de ejemplo, de varios estilos. |
 | `src/song.js` · `src/share.js` | La canción en la URL (empaquetada y comprimida) y compartirla con un enlace. |
 
 ```sh

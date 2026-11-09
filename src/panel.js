@@ -254,6 +254,7 @@ function buildBody(spec, engine, onEdit) {
   }
 
   refresh();
+  body.refresh = refresh;
   return body;
 }
 
@@ -306,6 +307,10 @@ export function createPanel(root, onEdit) {
       if (!body) return;
       bodies.delete(from);
       bodies.set(to, body);
+    },
+    // Al cargar otra canción: todos los controles, con los valores nuevos.
+    refreshAll() {
+      for (const body of bodies.values()) body.refresh();
     },
     show(track, name) {
       current = track;

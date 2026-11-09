@@ -36,7 +36,9 @@ const button = (cls, text, label) => {
 };
 
 // root: donde va. seq: el secuenciador. actions: { play(), setTrack(track), tracks() (las
-// pistas, en orden: [{ id, name }]), addSynth(), removeSynth(track) }.
+// pistas, en orden: [{ id, name }]), addSynth(), removeSynth(track), nextDemo(),
+// reset(), demoName() (la demo cargada, si no se ha tocado), isDirty() (si hay cambios que
+// se perderían) }.
 export function createSeqView(root, seq, actions) {
   // ---- La barra ----
   const bar = el('div', 'seq__bar');
@@ -127,7 +129,36 @@ export function createSeqView(root, seq, actions) {
   });
   edit.append(del, clear);
 
-  bar.append(play, rec, bpmBox, swingBox, tabs, edit);
+  // Las demos y empezar de cero. Si hay cambios que se perderían, dos toques (el primero
+  // pregunta); si no, a la primera.
+  const songBox = el('div', 'seq__song');
+  const demoName = el('span', 'seq__demo');
+  const demo = button(null, 'demo →', 'Cargar la siguiente demo');
+  const fresh = button(null, 'new', 'Empezar de cero (todo vacío)');
+  const confirmed = (b, text, run) => {
+    let armedAt = 0;
+    b.addEventListener('click', () => {
+      if (!actions.isDirty() || performance.now() - armedAt < 2500) {
+        armedAt = 0;
+        b.textContent = text;
+        run();
+      } else {
+        armedAt = performance.now();
+        b.textContent = 'sure?';
+        setTimeout(() => (b.textContent = text), 2500);
+      }
+    });
+  };
+  confirmed(demo, 'demo →', () => actions.nextDemo());
+  confirmed(fresh, 'new', () => actions.reset());
+  songBox.append(demoName, demo, fresh);
+  const refreshDemo = () => {
+    const name = actions.demoName();
+    demoName.textContent = name ? `♪ ${name}` : '';
+    demoName.hidden = !name;
+  };
+
+  bar.append(play, rec, bpmBox, swingBox, songBox, tabs, edit);
 
   // ---- La rejilla ----
   const grid = el('div', 'seq__grid');
@@ -170,6 +201,7 @@ export function createSeqView(root, seq, actions) {
     swingIn.value = Math.round(st.swing * 100);
     swingOut.textContent = `${Math.round(st.swing * 100)}%`;
     renderTabs();
+    refreshDemo();
     grid.dataset.track = kindOf(track);
 
     grid.textContent = '';
@@ -234,6 +266,7 @@ export function createSeqView(root, seq, actions) {
 
   return {
     render,
+    refreshDemo,
     setStep,
     setTrack(t) {
       track = t;

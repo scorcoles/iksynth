@@ -18,6 +18,7 @@
 //   visual.js    → lo que se ve: la esfera de puntos y su malla
 //   panel.js     → el panel con el sonido de cada pista
 //   keys.js      → tocar: el teclado del ordenador y el de la pantalla
+//   demos.js     → las demos (#demo1, #demo2…)
 //   song.js      → la canción en la URL
 //   share.js     → compartir la canción, con un enlace
 //   main.js      → el escenario, la cámara, los modos, las pistas y el bucle (este archivo)
@@ -28,9 +29,10 @@
 
 import * as THREE from 'three';
 import { createBus } from './audio.js';
-import { createSynth } from './synth.js';
-import { createAcid } from './acid.js';
-import { createDrums, VOICES } from './drums.js';
+import { createSynth, DEFAULTS as SYNTH_DEFAULTS } from './synth.js';
+import { createAcid, ACID_DEFAULTS } from './acid.js';
+import { createDrums, VOICES, DRUM_DEFAULTS } from './drums.js';
+import { DEMOS, EMPTY } from './demos.js';
 import { createSequencer, synthTrack, synthIndex, kindOf } from './sequencer.js';
 import { createSeqView } from './seqview.js';
 import { createVisual, toBands, BANDS } from './visual.js';
@@ -95,7 +97,19 @@ window.addEventListener('keydown', (e) => {
   e.preventDefault();
   stepMode(e.key === 'ArrowLeft' ? -1 : 1);
 });
-const fromHash = () => setMode(decodeURIComponent(location.hash.slice(1)));
+// #demo1, #demo2…: una demo (demos.js). Se carga (al abrir, cuando todo está listo) y la
+// dirección se queda con el modo, sin la demo.
+let ready = false;
+let startDemo = -1;
+const fromHash = () => {
+  const hash = decodeURIComponent(location.hash.slice(1));
+  const demo = hash.match(/^demo(\d+)$/);
+  if (!demo) return setMode(hash);
+  const i = Number(demo[1]) - 1;
+  setMode(mode);
+  if (ready) loadDemo(i);
+  else startDemo = i;
+};
 window.addEventListener('hashchange', fromHash);
 fromHash();
 
@@ -132,6 +146,12 @@ const song = () => ({
   drums: engines.drums.params,
   seq: seq.state,
 });
+// La demo cargada (−1: ninguna) y cómo era la canción al cargarla: si ha cambiado, cargar
+// otra pide confirmación. Al abrir, lo que hubiera guardado cuenta como cambiado.
+let demoIndex = -1;
+let snapshot = '';
+const songJson = () => JSON.stringify(song());
+
 const refreshShare = () => encodeSong(song()).then((code) => (shareCode = code)).catch(() => {});
 
 let saveTimer = 0;
@@ -178,8 +198,12 @@ const hitNow = () => {
   kicked = true;
 };
 
-// El panel: el sonido de la pista elegida.
-const panel = createPanel(document.querySelector('[data-panel]'), save);
+// El panel: el sonido de la pista elegida. Cada cambio se guarda (y, si era una demo, ya
+// no lo es).
+const panel = createPanel(document.querySelector('[data-panel]'), () => {
+  save();
+  view?.refreshDemo();
+});
 panel.add('acid', 'acid', engines.acid);
 panel.add('drums', 'drums', engines.drums);
 
@@ -233,6 +257,15 @@ const view = createSeqView(document.querySelector('[data-seq]'), seq, {
     makeSynth(i, null);
     setTrack(synthTrack(i));
   },
+  nextDemo: () => loadDemo(demoIndex + 1),
+  reset() {
+    loadSong(EMPTY);
+    demoIndex = -1;
+    snapshot = songJson();
+    view.render();
+  },
+  demoName: () => (demoIndex >= 0 && !isDirty() ? DEMOS[demoIndex].name : null),
+  isDirty,
   removeSynth(t) {
     const i = synthIndex(t);
     if (i < 1 || !engines.synths[i]) return;
@@ -312,6 +345,42 @@ window.addEventListener('keydown', (e) => {
     seq.clearStep(track);
   }
 });
+
+// ---- Otra canción entera: una demo o «new» ----
+// Los sonidos parten de los de serie (las demos solo llevan lo que cambia); las pistas de
+// synth se crean o se quitan hasta que haya las de la canción. Si estaba sonando, sigue.
+function loadSong(next) {
+  keys.releaseAll();
+  engines.acid.load({ ...ACID_DEFAULTS, ...next.acid });
+  engines.drums.load({ ...DRUM_DEFAULTS, ...next.drums });
+  seq.load(next.seq);
+  const count = seq.state.synths.length;
+  while (engines.synths.length > count) {
+    const i = engines.synths.length - 1;
+    engines.synths[i].dispose();
+    engines.synths.pop();
+    panel.remove(synthTrack(i));
+  }
+  for (let i = 0; i < count; i++) {
+    if (!engines.synths[i]) makeSynth(i, null);
+    engines.synths[i].load({ ...SYNTH_DEFAULTS, ...(next.synths?.[i] || {}) });
+  }
+  panel.refreshAll();
+  setTrack(track);
+}
+
+function isDirty() {
+  return songJson() !== snapshot;
+}
+function loadDemo(i) {
+  demoIndex = ((i % DEMOS.length) + DEMOS.length) % DEMOS.length;
+  loadSong(DEMOS[demoIndex]);
+  snapshot = songJson();
+  view.render();
+}
+
+ready = true;
+if (startDemo >= 0) loadDemo(startDemo);
 
 // Compartir: un enlace con la canción. La que llegó por enlace ya es de aquí: se guarda y
 // la dirección se queda limpia.

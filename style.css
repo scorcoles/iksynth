@@ -894,3 +894,19 @@ body {
   padding: 3px 8px;
   border-style: dashed;
 }
+
+/* Las demos y «new»; delante, el nombre de la demo cargada (mientras no se toque). */
+.seq__song {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.seq__demo {
+  margin-right: 4px;
+  white-space: nowrap;
+}
+
+.seq__demo[hidden] {
+  display: none;
+}
