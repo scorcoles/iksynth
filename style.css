@@ -2,14 +2,14 @@
    iksynth: el sonido dibujado a toda la pantalla y, encima, el símbolo, los botones, el
    panel del sinte, el teclado y el pie
    =========================================================================================
-   Un juego de colores por modo (main.js pone data-mode en <html>): ridge, lima ácida sobre
+   Un juego de colores por modo (main.js pone data-mode en <html>): ridge, lima apagado sobre
    grafito; orb, azul hielo sobre negro azulado; y wire, gris oscuro sobre papel. --page es
    el color de la página y --ink el de la letra; el pie y el panel son bloques del color de
    la letra, con la letra del color de la página. */
 
 :root {
   --page: #141514;
-  --ink: #c8f04a;
+  --ink: #a6bf5c;
   --side: 1rem;
 }
 

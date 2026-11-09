@@ -14,7 +14,7 @@
 //   main.js   → el escenario, la cámara, los modos y el bucle (este archivo)
 //
 // Tres modos, con «Prev» y «Next» en el pie, las flechas del teclado o la dirección
-// (#orb, #wire): «ridge», el espectro como una cordillera, lima ácida sobre grafito; «orb», una
+// (#orb, #wire): «ridge», el espectro como una cordillera, lima apagado sobre grafito; «orb», una
 // esfera de puntos que respira con el sonido, azul hielo sobre negro azulado; y «wire», la
 // misma esfera en malla gris sobre papel.
 
@@ -29,7 +29,7 @@ import '../style.css';
 // Los modos: el color de la página y el de la tinta, y desde dónde mira la cámara (su
 // sitio y adónde mira, para una pantalla apaisada; en vertical, se aleja).
 const LOOKS = {
-  ridge: { page: '#141514', ink: '#c8f04a', eye: [0, 1.5, 3.4], target: [0, 0.15, -1.9], fog: [3.6, 9.5] },
+  ridge: { page: '#141514', ink: '#a6bf5c', eye: [0, 1.5, 3.4], target: [0, 0.15, -1.9], fog: [3.6, 9.5] },
   orb: { page: '#070a12', ink: '#a9c9ff', eye: [0, 0, 4.8], target: [0, -0.22, 0], fog: [4.2, 6.2] },
   wire: { page: '#eeeeee', ink: '#333333', eye: [0, 0, 4.8], target: [0, -0.22, 0], fog: [4.2, 6.4] },
 };
